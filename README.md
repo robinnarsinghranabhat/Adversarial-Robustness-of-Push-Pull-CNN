@@ -51,7 +51,7 @@ python -m test_corruption --fgsm-epsilon 0.01 -b 2048 --arch resnet --name resne
 ### Test above model on PGD distorted CIFAR and PGD distorted NOISY-CIFAR 
 Specify parameter for : `pgd-epsilon`
 ```bash
-python -m test_corruption_pgd --pgd-epsilon 0.01 -b 2048 --arch resnet --name resnet-20-no-pp-2048-120epoc --layers 20 --corrupted-data-dir ./ --use-cuda
+python -m test_corruption_pgd --pgd-epsilon 0.01 -b 2048 --arch resnet --name resnet-20-no-pp-2048-120epoc --layers 20 --corrupted-data-dir ./ --use-cuda --geom-transfom
 ```
 
 
@@ -75,7 +75,7 @@ python -m test_corruption  --fgsm-epsilon 0.01  -b 2048 --arch resnet --name res
 ### Test above model on PGD distorted CIFAR and PGD distorted NOISY-CIFAR 
 Specify parameter for : `pgd-epsilon`
 ```bash
-python -m test_corruption_pgd  --pgd-epsilon 0.01  -b 2048 --arch resnet --name resnet-20-pp-2048-120epoc --pushpull --layers 20 --corrupted-data-dir ./ --use-cuda
+python -m test_corruption_pgd  --pgd-epsilon 0.01  -b 2048 --arch resnet --name resnet-20-pp-2048-120epoc --pushpull --layers 20 --corrupted-data-dir ./ --use-cuda --geom-transform
 ```
 
 
