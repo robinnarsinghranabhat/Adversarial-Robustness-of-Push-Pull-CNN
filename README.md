@@ -61,7 +61,11 @@ python -m test_corruption_pgd --pgd-epsilon 0.01 -b 2048 --arch resnet --name re
 ```bash
 python -m train_direct -b 2048 --arch resnet --name resnet-20-pp-2048-120epoc --pushpull --layers 20 --print-freq 4 --epochs 120 --use-cuda
 ```
-
+### Test above model on CIFAR and Noisy-CIFAR
+We use the same name used during training.   
+```bash
+python -m test_corruption -b 2048 --arch resnet --name resnet-20-pp-2048-120epoc --pushpull --layers 20 --corrupted-data-dir ./ --use-cuda
+```
 ### Test above model on FGSM distorted CIFAR and FGSM distorted NOISY-CIFAR 
 Specify parameter for : `fgsm-epsilon`
 ```bash
