@@ -37,6 +37,7 @@ parser.add_argument('--no-bottleneck', dest='bottleneck', action='store_false', 
 parser.add_argument('--no-efficient', dest='efficient', action='store_false', help='to not use efficient impl.')
 
 parser.add_argument('--pushpull', action='store_true', help='use Push-Pull as 1st layer (default: False)')
+parser.add_argument('--use-cuda', action='store_true', help='Use Cuda (default: False)')
 parser.add_argument('--pp-block1', action='store_true', help='use 1st PushPull residual block')
 parser.add_argument('--pp-block1-reduced', action='store_true', help='use 1st PushPull residual block reduced')
 parser.add_argument('--pp-all', action='store_true', help='use all PushPull residual block')
