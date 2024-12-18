@@ -200,16 +200,16 @@ def main():
         f1.write(distortion_name + ': ' + ' '.join(map(str, rates)) + '\n')
         f2.write('Distortion: {:15s}  | CE (unnormalized) (%): {:.2f}\n'.format(distortion_name, 100 * np.mean(rates)))
         
-        print(distortion_name + ': ' + ' '.join(['%.4f ' % s for s in rates]))
-        print('Error-Rates for Distortion: {:15s}  | CE (unnormalized) (%): {:.2f}'.format(distortion_name, 100 * np.mean(rates)))
+        print(distortion_name + ' error at severities (1-5): ' + ' '.join(['%.4f ' % s for s in rates]))
+        print('Error-Rates for Distortion: {:15s} : {:.2f}'.format(distortion_name, 100 * np.mean(rates)))
 
-        print(distortion_name + ': ' + ' '.join(['%.4f ' % s for s in accuracies]))
-        print('Mean Accuracy for Distortion: {:15s}  across all severities : {:.2f}'.format(distortion_name, np.mean(accuracies)))
+        print(distortion_name + ' accuracy at severities (1-5): ' + ' '.join(['%.4f ' % s for s in accuracies]))
+        print('Mean Accuracy for Distortion: {:15s} across all severities : {:.2f}'.format(distortion_name, np.mean(accuracies)))
 
     f1.close()
     f2.close()
-    print('Overall Mean Error on all distorted CIFAR images at each severity  (unnormalized by AlexNet errors) (%): {:.2f}'.format(100 * np.mean(mean_rates)))
-    print('Overall Mean Accuracty on all distorted CIFAR images at each severity: {:.2f}'.format(np.mean(mean_acc_rates)))
+    print('## -- Overall Mean Error on all distorted CIFAR images at each severity : {:.2f}'.format(100 * np.mean(mean_rates)))
+    print('## -- Overall Mean Accuracty on all distorted CIFAR images at each severity: {:.2f}'.format(np.mean(mean_acc_rates)))
 
 
 def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0):
@@ -284,8 +284,8 @@ def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0
             pred = output.detach().cpu().max(1)[1]
             correct += pred.eq(target.cpu()).sum()
 
-            if batch_idx % args.print_freq == 0:
-                print("Current Avg. Acc  : ", top1.avg)
+            if batch_idx % args.print_freq * 10 == 0:
+                print("-- Current Avg. Acc  : ", top1.avg)
         
         
         accuracies.append(top1.avg)
