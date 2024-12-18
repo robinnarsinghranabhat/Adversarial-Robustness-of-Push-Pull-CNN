@@ -309,7 +309,7 @@ def validate(val_loader, model, criterion, adversarial_eps=0, file=None):
     if adversarial_eps == 0:
         print("Evaluating on CLEAN CIFAR Images")
     else:
-        print(f"Evaluating on CLEAN CIFAR Images perturbed by FGSM at epsilon : {adversarial_eps}")
+        print(f"Evaluating on CLEAN CIFAR Images perturbed by PGD at epsilon : {adversarial_eps}")
 
     # This makes dropout and batch normalization constant. 
     # Thus leads to stable, reproducible gradients for inputs.
@@ -332,6 +332,10 @@ def validate(val_loader, model, criterion, adversarial_eps=0, file=None):
     
             original_images = input.clone().detach()
             perturbed_images = input.clone().detach()
+            if use_cuda:
+                original_images = original_images.cuda()
+                perturbed_images = input.clone().detach()
+
             perturbed_images.requires_grad = True
 
             for _ in range(pgd_iters):
