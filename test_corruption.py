@@ -186,6 +186,10 @@ def main():
 
     # accuracy_rates = []
     mean_acc_rates = []
+    if fgsm_epsilon == 0:
+        print("Evaluating on NOISY CIFAR Images")
+    else:
+        print(f"Evaluating on NOISY CIFAR Images perturbed by FGSM at epsilon : {fgsm_epsilon}")
 
     f1 = open(expdir + args.name + '/C_details.txt', "w+")
     f2 = open(expdir + args.name + '/C_average.txt', "w+")
@@ -218,12 +222,6 @@ def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0
     # These are average erros and acc. for each severity on a particular distortion.
     errs = []
     accuracies = []
-
-    if adversarial_eps == 0:
-        print("Evaluating on NOISY CIFAR Images")
-    else:
-        print(f"Evaluating on NOISY CIFAR Images perturbed by PGD at epsilon : {adversarial_eps}")
-
 
     # Data loading code
     transform_test = transforms.Compose([
