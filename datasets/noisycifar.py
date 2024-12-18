@@ -151,6 +151,11 @@ class NCIFAR10(data.Dataset):
         # to return a PIL Image
         img = Image.fromarray(img)
 
+        # Simulate Rotated , Sheared image
+        if self.apply_geometric_transform is not None:
+            geom_trnsfrm = geometric_transforms(severity=1)
+            img = geom_trnsfrm(img)
+
         if self.transform is not None:
             img = self.transform(img)
 
@@ -171,9 +176,6 @@ class NCIFAR10(data.Dataset):
 
         if self.normalize_transform is not None:
             img = self.normalize_transform(img)
-        
-        if self.apply_geometric_transform is not None:
-            img = geometric_transforms(img)
 
         return img, target
 
