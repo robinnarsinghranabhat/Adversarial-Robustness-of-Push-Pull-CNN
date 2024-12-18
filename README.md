@@ -1,7 +1,7 @@
 # Push-Pull layer for enhanced robustness of ConvNets [[Paper]](https://link.springer.com/article/10.1007/s00521-020-04751-8)
 
 ## First Download the Noisy-Cifar Dataset
-1. Goto Project root folder (goto `Push-Pull-CNN-layer` folder)and run :
+1. Goto Project root folder (goto `Adversarial-Robustness-of-Push-Pull-CNN` folder)and run :
 ```bash
 wget https://zenodo.org/records/2535967/files/CIFAR-10-C.tar?download=1 -O CIFAR-10-C.tar
 ```
