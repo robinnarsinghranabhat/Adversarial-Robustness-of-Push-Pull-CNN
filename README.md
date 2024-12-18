@@ -2,6 +2,7 @@
 
 ## Creating Python environment if not present (Optional)
 ```bash
+## commands below creates a python virtual environment called  "myenv" and installs all libraries inside it.
 python3 -m venv myenv
 source ./myenv/bin/activate
 pip install --upgrade pip
@@ -12,19 +13,24 @@ pip3 install torch torchvision torchaudio
 pip3 install tensorboard_logger tensorflow
 ```
 
-## Download the Noisy-Cifar Dataset
-1. Goto Project root folder (goto `Adversarial-Robustness-of-Push-Pull-CNN` folder)and run :
+## Project Setup
 ```bash
+# Clone the Repo
+git clone https://github.com/robinnarsinghranabhat/Adversarial-Robustness-of-Push-Pull-CNN.git
+
+# Goto to Project Root 
+cd ./Adversarial-Robustness-of-Push-Pull-CNN
+
+# Download the Corrupted-Cifar Dataset in above folder
 wget https://zenodo.org/records/2535967/files/CIFAR-10-C.tar?download=1 -O CIFAR-10-C.tar
-```
-2. Extract the Files inside the folder : `CIFAR-10-C`
-```bash
+
+# Extract the Files inside the folder : `CIFAR-10-C`
 tar -xvf CIFAR-10-C.tar
 ```
 
 ## 1. Without any Pushpull (Baseline Model)
 ### Train for 120 epochs
-Command below trains a BASELINE CNN Resnet-20 architecture. Batch size is 2040, epochs is 120. 
+Command below trains a BASELINE CNN Resnet-20 architecture. In example below, Batch size is 2040, epochs is 120. 
 
 After each iteration, output model and logs are saved at : `./experiments/resnet-cifar/resnet-20-no-pp-2048-120epoc`
 Here, `resnet-20-no-pp-2048-120epoc` is name of experiment. And also folder name used to save results.
