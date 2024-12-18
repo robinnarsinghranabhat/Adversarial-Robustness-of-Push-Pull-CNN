@@ -355,6 +355,7 @@ def validate(val_loader, model, criterion, adversarial_eps=0, file=None):
                 # Project back to the l_infinity ball
                 perturbation = torch.clamp(perturbed_images - original_images, -adversarial_eps, adversarial_eps)
                 perturbed_images = torch.clamp(original_images + perturbation, 0, 1).detach()
+                perturbed_images.requires_grad = True
                 
 
         loss = loss.detach()
