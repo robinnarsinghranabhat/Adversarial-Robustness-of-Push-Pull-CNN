@@ -83,11 +83,6 @@ pgd_iters = 10     # Number of iterations
 
 
 def main():
-    
-
-    if args.corrupted_data_dir != '':
-        corr_dataset_root = args.corrupted_data_dir
-
     # Clean Data loading code
     normalize = transforms.Normalize(mean=[x / 255.0 for x in [125.3, 123.0, 113.9]],
                                      std=[x / 255.0 for x in [63.0, 62.1, 66.7]])
@@ -110,7 +105,7 @@ def main():
     # create model
     expdir = ''
     if args.arch == 'resnet':
-        expdir = 'models/resnet-cifar/'
+        expdir = 'experiments/resnet-cifar/'
         rnargs = {'use_pp1': args.pushpull,
                   'pp_block1': args.pp_block1,
                   'pp_all': args.pp_all,
