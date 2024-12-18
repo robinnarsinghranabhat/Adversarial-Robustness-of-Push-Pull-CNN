@@ -292,7 +292,7 @@ def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0
             top1.update(prec1.item(), data.size(0))
 
             pred = output.detach().cpu().max(1)[1]
-            correct += pred.eq(target).sum()
+            correct += pred.eq(target.cpu()).sum()
 
             if batch_idx % args.print_freq == 0:
                 print("INSIDE LOOP, Acc > ", top1.avg)
