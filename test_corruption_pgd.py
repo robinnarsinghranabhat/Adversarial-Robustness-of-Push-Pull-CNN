@@ -296,7 +296,7 @@ def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0
             correct += pred.eq(target.cpu()).sum()
 
             if batch_idx % args.print_freq == 0:
-                print("INSIDE LOOP, Acc > ", top1.avg)
+                print("-- Current Avg. Acc  : ", top1.avg)
         
         
         accuracies.append(top1.avg)
