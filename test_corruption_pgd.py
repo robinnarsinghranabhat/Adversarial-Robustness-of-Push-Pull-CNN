@@ -265,6 +265,9 @@ def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0
             else:  # Add Adversarial perturbation
                 original_images = data.clone().detach()
                 perturbed_images = data.clone().detach()
+                if use_cuda:
+                    original_images = original_images.cuda()
+                    perturbed_images = perturbed_images.cuda()
                 perturbed_images.requires_grad = True
 
                 for _ in range(pgd_iters):
@@ -320,21 +323,21 @@ def validate(val_loader, model, criterion, adversarial_eps=0, file=None):
         if use_cuda:
             target = target.cuda() # Temporarilly removed : async=True
             input = input.cuda()
-        input_var = torch.autograd.Variable(input, requires_grad=True)
-        target_var = torch.autograd.Variable(target)
+        
+        input.requires_grad = True
 
         # compute output
         if adversarial_eps == 0:
             with torch.no_grad():
-                output = model(input_var)
-            loss = criterion(output, target_var)
+                output = model(input)
+            loss = criterion(output, target)
         else:  # Add Adversarial perturbation
     
             original_images = input.clone().detach()
             perturbed_images = input.clone().detach()
             if use_cuda:
                 original_images = original_images.cuda()
-                perturbed_images = input.clone().detach()
+                perturbed_images = perturbed_images.cuda()
 
             perturbed_images.requires_grad = True
 
@@ -352,7 +355,7 @@ def validate(val_loader, model, criterion, adversarial_eps=0, file=None):
                 # Project back to the l_infinity ball
                 perturbation = torch.clamp(perturbed_images - original_images, -adversarial_eps, adversarial_eps)
                 perturbed_images = torch.clamp(original_images + perturbation, 0, 1).detach()
-                perturbed_images.requires_grad = True
+                
 
         loss = loss.detach()
         output = output.detach()
