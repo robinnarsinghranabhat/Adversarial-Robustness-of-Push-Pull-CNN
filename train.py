@@ -49,6 +49,7 @@ parser.add_argument('--no-efficient', dest='efficient', action='store_false',
                     help='To not use bottleneck block')
 
 parser.add_argument('--pushpull', action='store_true', help='use Push-Pull layer as 1st layer (default: False)')
+parser.add_argument('--use-cuda', action='store_true', help='Use Cuda (default: False)')
 parser.add_argument('--pp-block1', action='store_true', help='use 1st PushPull residual block')
 parser.add_argument('--pp-all', action='store_true', help='use all PushPull residual block')
 
@@ -67,8 +68,7 @@ parser.add_argument('--tensorboard', help='Log progress to TensorBoard', action=
 parser.set_defaults(augment=True)
 
 best_prec1 = 0
-use_cuda = False
-
+use_cuda = torch.cuda.is_available() & args.use_cuda
 
 def main():
     global args, best_prec1, use_cuda
@@ -271,7 +271,7 @@ def train(logger, train_loader, model, criterion, optimizer, epoch, file=None):
     end = time.time()
     for i, (input, target) in enumerate(train_loader):
         if use_cuda:
-            target = target.cuda(async=True)
+            target = target.cuda()
             input = input.cuda()
 
         input_var = torch.autograd.Variable(input)
