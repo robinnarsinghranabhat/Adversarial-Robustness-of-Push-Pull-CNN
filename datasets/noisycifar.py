@@ -13,6 +13,7 @@ import torch
 import torch.utils.data as data
 from torchvision.datasets.utils import download_url, check_integrity
 # from utils import noise_models
+from utils.geometric_transforms import geometric_transforms
 
 
 class NCIFAR10(data.Dataset):
@@ -56,11 +57,13 @@ class NCIFAR10(data.Dataset):
     def __init__(self, root, train=True,
                  transform=None, target_transform=None,
                  noise_test=None, clip_noise=False,
-                 normalize_transform=None, download=False):
+                 normalize_transform=None, apply_geometric_transform=False, download=False):
         self.root = os.path.expanduser(root)
         self.transform = transform
         self.target_transform = target_transform
         self.normalize_transform = normalize_transform
+        self.apply_geometric_transform = apply_geometric_transform
+
 
         self.train = train  # training set or test set
         self.noise_test = noise_test
@@ -168,6 +171,9 @@ class NCIFAR10(data.Dataset):
 
         if self.normalize_transform is not None:
             img = self.normalize_transform(img)
+        
+        if self.apply_geometric_transform is not None:
+            img = geometric_transforms(img)
 
         return img, target
 
