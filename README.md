@@ -36,7 +36,7 @@ After each iteration, output model and logs are saved at : `./experiments/resnet
 Here, `resnet-20-no-pp-2048-120epoc` is name of experiment. And also folder name used to save results.
 
 ```bash
-python -m train -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-2048-120epoc  --print-freq 4 --epochs 120 --use-cuda
+python -m train_direct -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-2048-120epoc  --print-freq 4 --epochs 120 --use-cuda
 ```
 ### Test above model on CIFAR and Noisy-CIFAR
 We use the same name used during training.   
@@ -59,7 +59,7 @@ python -m test_corruption_pgd --pgd-epsilon 0.01 -b 2048 --arch resnet --name re
 ## 2. With Pushpull at just first Convolution Layer
 ### Train on CLEAN CIFAR
 ```bash
-python -m train -b 2048 --arch resnet --name resnet-20-pp-2048-120epoc --pushpull --layers 20 --print-freq 4 --epochs 120 --use-cuda
+python -m train_direct -b 2048 --arch resnet --name resnet-20-pp-2048-120epoc --pushpull --layers 20 --print-freq 4 --epochs 120 --use-cuda
 ```
 
 ### Test above model on FGSM distorted CIFAR and FGSM distorted NOISY-CIFAR 
@@ -78,7 +78,7 @@ python -m test_corruption_pgd  --pgd-epsilon 0.01  -b 2048 --arch resnet --name 
 ## 3. With PushPull across all layers
 ### Train
 ```bash
-python -m train --pushpull --pp-all -b 2048 --arch resnet --name resnet-20-all-pp-2048-120epoc --layers 20 --print-freq 4  --epochs 120 --use-cuda
+python -m train_direct --pushpull --pp-all -b 2048 --arch resnet --name resnet-20-all-pp-2048-120epoc --layers 20 --print-freq 4  --epochs 120 --use-cuda
 ```
 ### Test on CIFAR and NOISY-CIFAR
 ```bash
