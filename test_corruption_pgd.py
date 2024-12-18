@@ -253,7 +253,8 @@ def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0
         correct = 0
         for batch_idx, (data, target) in enumerate(distorted_dataset_loader):
             if use_cuda:
-                    data = data.cuda()
+                data = data.cuda()
+                target = target.cuda()
             
             model.eval()
             if adversarial_eps == 0:
