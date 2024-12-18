@@ -55,7 +55,11 @@ parser.add_argument('--arch', default='resnet', type=str, help='architecture (re
 parser.add_argument('--name', default='01-20', type=str, help='name of experiment-model')
 
 best_prec1 = 0
+args = parser.parse_args()
+
+pgd_epsilon = args.pgd_epsilon  # Maximum allowed perturbation    
 use_cuda = torch.cuda.is_available() & args.use_cuda
+
 if use_cuda:
     print("Using CUDA Environment")
 
@@ -69,15 +73,15 @@ distortions = [
 # Root folder of the CIFAR-C and CIFAR-P data sets
 # Please change it with the path to the folder where you un-tar the CIFAR-C data set
 # (or use the --corrupted-data-dir argument)
-corr_dataset_root = '/path/to/CIFAR-C/root/folder/'
+corr_dataset_root = ''
+if args.corrupted_data_dir != '':
+    corr_dataset_root = args.corrupted_data_dir
+
 pgd_alpha = 0.01   # Step size
 pgd_iters = 10     # Number of iterations
 
 
 def main():
-    global args, best_prec1, use_cuda, corr_dataset_root
-    args = parser.parse_args()
-    pgd_epsilon = args.pgd_epsilon  # Maximum allowed perturbation
     
 
     if args.corrupted_data_dir != '':
@@ -222,7 +226,11 @@ def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0
     errs = []
     accuracies = []
 
-    global corr_dataset_root, use_cuda
+    if adversarial_eps == 0:
+        print("Evaluating on NOISY CIFAR Images")
+    else:
+        print(f"Evaluating on NOISY CIFAR Images perturbed by PGD at epsilon : {adversarial_eps}")
+
     # Data loading code
     transform_test = transforms.Compose([
         transforms.ToTensor(),
@@ -296,7 +304,6 @@ def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0
 
 
 def validate(val_loader, model, criterion, adversarial_eps=0, file=None):
-    global use_cuda
     """Perform validation on the validation set"""
     batch_time = AverageMeter()
     losses = AverageMeter()

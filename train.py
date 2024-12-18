@@ -68,12 +68,10 @@ parser.add_argument('--tensorboard', help='Log progress to TensorBoard', action=
 parser.set_defaults(augment=True)
 
 best_prec1 = 0
+args = parser.parse_args()
 use_cuda = torch.cuda.is_available() & args.use_cuda
 
 def main():
-    global args, best_prec1, use_cuda
-    args = parser.parse_args()
-
     # Data loading code
     normalize = transforms.Normalize(mean=[x / 255.0 for x in [125.3, 123.0, 113.9]],
                                      std=[x / 255.0 for x in [63.0, 62.1, 66.7]])
@@ -263,7 +261,6 @@ def train(logger, train_loader, model, criterion, optimizer, epoch, file=None):
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
-    global use_cuda
 
     # switch to train mode
     model.train()
@@ -350,7 +347,7 @@ def validate(logger, val_loader, model, criterion, epoch, file=None):
     end = time.time()
     for i, (input, target) in enumerate(val_loader):
         if use_cuda:
-            target = target.cuda(async=True)
+            target = target.cuda()
             input = input.cuda()
         input_var = torch.autograd.Variable(input)
         target_var = torch.autograd.Variable(target)
