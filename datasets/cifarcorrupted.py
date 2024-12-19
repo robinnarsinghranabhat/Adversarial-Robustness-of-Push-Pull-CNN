@@ -6,13 +6,15 @@ import numpy as np
 import sys
 import torch.utils.data as data
 from torchvision.datasets.utils import download_url, check_integrity
+from utils.geometric_transforms import geometric_transforms
 
 
 class CorruptionCIFAR(data.Dataset):
-    def __init__(self, data, labels, transform=None):
+    def __init__(self, data, labels, transform=None, apply_geometric_transform=None):
         self.data = data
         self.labels = labels
         self.transform = transform
+        self.apply_geometric_transform = apply_geometric_transform
 
     def __getitem__(self, index):
         """
@@ -24,6 +26,11 @@ class CorruptionCIFAR(data.Dataset):
         """
         img, target = self.data[index], self.labels[index]
         img = Image.fromarray(img)
+        # Simulate Rotated , Sheared image
+        if self.apply_geometric_transform is not None:
+            geom_trnsfrm = geometric_transforms(severity=1)
+            img = geom_trnsfrm(img)
+
         img = self.transform(img)
 
         return img, target
@@ -73,9 +80,10 @@ class CIFAR10_C:
 
     n_cifar = 10000
 
-    def __init__(self, root, transform=None, corr_category='gaussian_noise'):
+    def __init__(self, root, transform=None, corr_category='gaussian_noise', apply_geometric_transform=None):
         self.root = os.path.expanduser(root)
         self.transform = transform
+        self.apply_geometric_transform = apply_geometric_transform
 
         if not self._check_integrity():
             # download the original CIFAR-10 in case it is not available (needed for GT)
@@ -98,7 +106,7 @@ class CIFAR10_C:
 
     def get_severity_set(self, set_id):
         imgdata = self.test_data[(set_id - 1) * self.n_cifar:set_id * self.n_cifar]
-        return CorruptionCIFAR(imgdata, self.test_labels, transform=self.transform)
+        return CorruptionCIFAR(imgdata, self.test_labels, transform=self.transform, apply_geometric_transform=self.apply_geometric_transform)
 
     def _check_integrity(self):
         root = self.root

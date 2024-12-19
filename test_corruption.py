@@ -231,7 +231,7 @@ def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0
                              std=[x / 255.0 for x in [63.0, 62.1, 66.7]]),
     ])
     if args.dataset == 'cifar10':
-        dataset = CIFAR10_C(corr_dataset_root, transform=transform_test, corr_category=distortion_name)
+        dataset = CIFAR10_C(corr_dataset_root, transform=transform_test, corr_category=distortion_name, apply_geometric_transform=args.geom_transform)
     elif args.dataset == 'cifar100':
         dataset = CIFAR100_C(corr_dataset_root, transform=transform_test, corr_category=distortion_name)
 

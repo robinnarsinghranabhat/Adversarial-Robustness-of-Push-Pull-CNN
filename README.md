@@ -86,7 +86,7 @@ python -m train_direct --pushpull --pp-all -b 2048 --arch resnet --name resnet-2
 ```
 ### Test on CIFAR and NOISY-CIFAR
 ```bash
-python -m test_corruption --pushpull --pp-all -b 2048 --arch resnet --name resnet-20-all-pp-2048-120epoc --layers 20 --corrupted-data-dir ./ --use-cuda
+python -m test_corruption --pushpull --pp-all -b 2048 --arch resnet --name resnet-20-all-pp-2048-120epoc --layers 20 --corrupted-data-dir ./ --use-cuda --geom-transform
 ```
 
 ### Test above model on FGSM distorted CIFAR and FGSM distorted NOISY-CIFAR 
