@@ -41,7 +41,7 @@ python -m train_direct -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-
 ### Test above model on CIFAR and Noisy-CIFAR
 We use the same name used during training.   
 ```bash
-python -m test_corruption -b 2048 --arch resnet --name resnet-20-no-pp-2048-120epoc --layers 20 --corrupted-data-dir ./ --use-cuda
+python -m test_corruption -b 2048 --arch resnet --name resnet-20-no-pp-2048-120epoc --layers 20 --corrupted-data-dir ./ --use-cuda --geom-transform
 ```
 ### Test above model on FGSM distorted CIFAR and FGSM distorted NOISY-CIFAR 
 Specify parameter for : `fgsm-epsilon`

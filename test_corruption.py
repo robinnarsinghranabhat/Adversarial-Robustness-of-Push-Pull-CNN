@@ -51,6 +51,7 @@ parser.add_argument('--train-alpha', action='store_true', help='train alpha of p
 
 parser.add_argument('--lpf-size', default=None, type=int, help='Size of the LPF for anti-aliasing (default: 1)')
 
+parser.add_argument('--geom-transform', action='store_true', help='Apply Geometric Transformation to Test Set (default: False)')
 parser.add_argument('--arch', default='resnet', type=str, help='architecture (resnet, densenet, ...)')
 parser.add_argument('--name', default='01-20', type=str, help='name of experiment-model')
 
@@ -88,7 +89,7 @@ def main():
     kwargs = {'num_workers': 0, 'pin_memory': True}
     assert (args.dataset == 'cifar10' or args.dataset == 'cifar100')
     if args.dataset == 'cifar10':
-        clean_data = NCIFAR10('./data', train=False, transform=transform_test, normalize_transform=normalize)
+        clean_data = NCIFAR10('./data', train=False, transform=transform_test, normalize_transform=normalize, apply_geometric_transform=args.geom_transform)
         nclasses = 10
 
     elif args.dataset == 'cifar100':
