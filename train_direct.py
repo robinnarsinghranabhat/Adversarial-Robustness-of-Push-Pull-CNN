@@ -3,6 +3,8 @@ This can be used to run training as well.
 This file is used to run training, similar to train.py. 
 Only difference is, all the code for model building steps are defined rather than imported.  
 """
+from __future__ import print_function
+
 import argparse
 import os
 import time
@@ -23,7 +25,7 @@ import datetime
 import uuid
 import tensorboard_logger
 
-from __future__ import print_function
+
 from PIL import Image
 import os
 import os.path
