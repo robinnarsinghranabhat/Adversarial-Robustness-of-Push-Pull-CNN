@@ -564,8 +564,6 @@ class BasicBlock(nn.Module):
 
         # instead of conv->bn->relu
         # bn->relu->conv
-        print("Starting a forward")
-        import pdb; pdb.set_trace()
         out = self.bn1(x)
         out = self.relu(out)
         out = self.conv1(out)
@@ -582,8 +580,6 @@ class BasicBlock(nn.Module):
             residual = self.downsample(x)
 
         out += residual
-        import pdb; pdb.set_trace()
-        print("Completed one forward")
 
         return out
 
