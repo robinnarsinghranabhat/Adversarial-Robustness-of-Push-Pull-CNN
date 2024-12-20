@@ -552,7 +552,7 @@ class BasicBlock(nn.Module):
                 self.conv1 = nn.Sequential(Downsample(filt_size=size_lpf, stride=stride, channels=inplanes),
                                        conv3x3(inplanes, planes), )
 
-        self.bn1 = nn.BatchNorm2d(planes)
+        self.bn1 = nn.BatchNorm2d(inplanes)
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes * self.expansion)
         self.bn2 = nn.BatchNorm2d(planes)
