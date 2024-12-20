@@ -632,7 +632,7 @@ class Bottleneck(nn.Module):
         return out
 
 class PushPullBlock(nn.Module):
-    expansion = 1
+    expansion = args.expansion
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None):
         super(PushPullBlock, self).__init__()
@@ -649,9 +649,10 @@ class PushPullBlock(nn.Module):
                 self.pp1 = nn.Sequential(Downsample(filt_size=size_lpf, stride=stride, channels=inplanes),
                                      PPmodule2d(inplanes, planes, kernel_size=3,
                                                 padding=1, bias=False, train_alpha=train_alpha), )
-        self.bn1 = nn.BatchNorm2d(planes)
+
+        self.bn1 = nn.BatchNorm2d(inplanes)
         self.relu = nn.ReLU(inplace=True)
-        self.pp2 = PPmodule2d(planes, planes, kernel_size=3, 
+        self.pp2 = PPmodule2d(planes, planes * self.expansion, kernel_size=3, 
                               padding=1, bias=False,  # alpha=alpha_pp, scale=scale_pp,
                               train_alpha=train_alpha)
         self.bn2 = nn.BatchNorm2d(planes)
@@ -661,18 +662,23 @@ class PushPullBlock(nn.Module):
     def forward(self, x):
         residual = x
 
-        out = self.pp1(x)
-        out = self.bn1(out)
+        out = self.bn1(x)
+        out = self.relu(out)
+        out = self.pp1(out)
+        
+        
+        out = self.bn2(out)
         out = self.relu(out)
 
+        # Also Add Dropout
+        out = F.dropout(out, p=0.1, training=self.training) # self.training comes from BaseClass
         out = self.pp2(out)
-        out = self.bn2(out)
+        
 
         if self.downsample is not None:
             residual = self.downsample(x)
 
         out += residual
-        out = self.relu(out)
 
         return out
 
