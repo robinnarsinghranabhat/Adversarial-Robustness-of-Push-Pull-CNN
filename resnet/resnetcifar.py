@@ -267,8 +267,8 @@ class ResNetCifar(nn.Module):
         return x
 
 
-def resnet20(**kwargs):
-    BasicBlock.expansion = kwargs.get('expansion', 1)
+def resnet20(expansion, **kwargs):
+    BasicBlock.expansion = expansion
     model = ResNetCifar(BasicBlock, [3, 3, 3], **kwargs)
     return model
 

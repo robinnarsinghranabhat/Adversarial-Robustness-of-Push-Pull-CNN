@@ -110,10 +110,10 @@ def main():
                   'pp_all': args.pp_all,
                   'train_alpha': args.train_alpha,
                   'size_lpf': args.lpf_size,
-                  'expansion': args.expansion}
+                  }
 
         if args.layers == 20:
-            model = resnet20(**rnargs)
+            model = resnet20(args.expansion, **rnargs)
         elif args.layers == 32:
             model = resnet32(**rnargs)
         elif args.layers == 44:
