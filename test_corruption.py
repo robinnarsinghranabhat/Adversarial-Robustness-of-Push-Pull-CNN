@@ -52,6 +52,8 @@ parser.add_argument('--train-alpha', action='store_true', help='train alpha of p
 parser.add_argument('--lpf-size', default=None, type=int, help='Size of the LPF for anti-aliasing (default: 1)')
 parser.add_argument('--expansion', default=1, type=int, help='total expansion of Kernels (default: 1)')
 
+parser.add_argument('-l', '--layer-sizes', nargs='+', type=int, default=[3,3,3],
+                    help='List of 3 integers for Core Resnet Layers')
 
 parser.add_argument('--geom-transform', action='store_true', help='Apply Geometric Transformation to Test Set (default: False)')
 parser.add_argument('--arch', default='resnet', type=str, help='architecture (resnet, densenet, ...)')
@@ -113,7 +115,7 @@ def main():
                   }
 
         if args.layers == 20:
-            model = resnet20(args.expansion, **rnargs)
+            model = resnet20(args.layer_sizes, args.expansion, **rnargs)
         elif args.layers == 32:
             model = resnet32(**rnargs)
         elif args.layers == 44:

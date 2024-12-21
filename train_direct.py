@@ -322,6 +322,8 @@ parser.add_argument('--scale-pp', default=2, type=float, help='upsampling factor
 
 parser.add_argument('--lpf-size', default=None, type=int, help='Size of the LPF for anti-aliasing (default: 1)')
 
+parser.add_argument('-l', '--layer-sizes', nargs='+', type=int, default=[3,3,3],
+                    help='List of 3 integers for Core Resnet Layers')
 parser.add_argument('--no-augment', dest='augment', action='store_false',
                     help='use standard augmentation (default: True)')
 parser.add_argument('--resume', default='', type=str, help='path to latest checkpoint (default: none)')
@@ -848,11 +850,8 @@ def main():
                 'train_alpha': args.train_alpha,
                 'size_lpf': args.lpf_size}
     
-    model = ResNetCifar(BasicBlock, [3, 3, 3], **rnargs)
-
-    print('Number of model parameters: {}'.format(
-        sum([p.data.nelement() for p in model.parameters()])))
-
+    model = ResNetCifar(BasicBlock, args.layer_sizes, **rnargs)
+    print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
 
     logger = None
     if args.tensorboard:
