@@ -104,7 +104,7 @@ python -m test_corruption_pgd --pgd-epsilon 0.01 --pushpull --pp-all -b 2048 --a
 ## 4. Wider RESNET expansion 3, No push-pull, 211, invertBNConv, 257946
 - Training
 ``bash
-python -m train_direct -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-2048-120epoc-exp-3-211-inv  --print-freq 4 --epochs 120 --use-cuda --expansion 3 -l 2 1 1
+python -m train_direct -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-2048-120epoc-exp-2-141-inv  --print-freq 4 --epochs 120 --use-cuda --expansion 2 -l 1 4 1
 ```
 
 - Testing on CIFAR
