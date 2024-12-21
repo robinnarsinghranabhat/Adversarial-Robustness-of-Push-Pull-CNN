@@ -107,9 +107,9 @@ python -m test_corruption_pgd --pgd-epsilon 0.01 --pushpull --pp-all -b 2048 --a
 python -m train_direct -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-2048-120epoc-exp-3-211-inv  --print-freq 4 --epochs 120 --use-cuda --expansion 3 -l 2 1 1
 ```
 
-- Testing
+- Testing on CIFAR
 ```bash
-python -m test_corruption -b 2048 --arch resnet --name resnet-20-no-pp-2048-120epoc-exp-4 --layers 20 --corrupted-data-dir ./ --use-cuda 
+python -m test_corruption -b 2048 --arch resnet --name resnet-20-no-pp-2048-120epoc-exp-3-211-inv --layers 20 --corrupted-data-dir ./ --use-cuda --expansion 3 -l 2 1 1
 ```
 
 
