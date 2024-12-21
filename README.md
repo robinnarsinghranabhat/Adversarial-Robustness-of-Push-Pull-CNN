@@ -36,7 +36,7 @@ After each iteration, output model and logs are saved at : `./experiments/resnet
 Here, `resnet-20-no-pp-2048-120epoc` is name of experiment. And also folder name used to save results.
 
 ```bash
-python -m train_direct -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-2048-120epoc  --print-freq 4 --epochs 120 --use-cuda
+python -m train_direct -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-2048-120epoc-exp1-333-inv  --print-freq 4 --epochs 120 --use-cuda
 ```
 ### Test above model on CIFAR and Noisy-CIFAR
 We use the same name used during training.   
@@ -101,11 +101,10 @@ Specify parameter for : `pgd-epsilon`
 python -m test_corruption_pgd --pgd-epsilon 0.01 --pushpull --pp-all -b 2048 --arch resnet --name resnet-20-all-pp-2048-120epoc --layers 20 --corrupted-data-dir ./ --use-cuda
 ``` 
 
-## 4. Wider RESNET expansion 4, No push-pull
+## 4. Wider RESNET expansion 3, No push-pull, 211, invertBNConv, 257946
 - Training
 ``bash
-python -m train_direct -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-2048-120epoc-exp-4  --print-freq 4 --epochs 120 --u
-se-cuda --expansion 4
+python -m train_direct -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-2048-120epoc-exp-3-211-inv  --print-freq 4 --epochs 120 --use-cuda --expansion 3 -l 2 1 1
 ```
 
 - Testing
