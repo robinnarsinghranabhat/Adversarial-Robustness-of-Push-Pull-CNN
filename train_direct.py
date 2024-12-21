@@ -602,6 +602,12 @@ class BasicBlock(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes * self.expansion)
         self.downsample = downsample
         self.stride = stride
+        
+        # Blur Params
+        self.gaus_blur_kernel_size = 3
+        self.gaus_blur_sigma = 1
+        self.gaus_blur = transforms.GaussianBlur(kernel_size=self.gaus_blur_kernel_size, sigma=self.gaus_blur_sigma)
+
 
     def forward(self, x):
         residual = x
@@ -609,6 +615,9 @@ class BasicBlock(nn.Module):
         out = self.conv1(x)
         out = self.bn1(out)
         out = self.relu(out)
+
+        if self.training:
+            out = self.gaus_blur(out)
 
         out = self.conv2(out)
         out = self.bn2(out)
