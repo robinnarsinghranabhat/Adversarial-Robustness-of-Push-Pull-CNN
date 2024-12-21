@@ -101,3 +101,20 @@ Specify parameter for : `pgd-epsilon`
 python -m test_corruption_pgd --pgd-epsilon 0.01 --pushpull --pp-all -b 2048 --arch resnet --name resnet-20-all-pp-2048-120epoc --layers 20 --corrupted-data-dir ./ --use-cuda
 ``` 
 
+## 4. Wider RESNET expansion 4, No push-pull
+- Training
+``bash
+python -m train_direct -b 2048 --arch resnet --layers 20 --name resnet-20-no-pp-2048-120epoc-exp-4  --print-freq 4 --epochs 120 --u
+se-cuda --expansion 4
+```
+
+- Testing
+```bash
+python -m test_corruption -b 2048 --arch resnet --name resnet-20-no-pp-2048-120epoc-exp-4 --layers 20 --corrupted-data-dir ./ --use-cuda 
+```
+
+
+## 5. Wider RESTNET expansion 4, All Push-Pull
+```bash
+python -m train_direct --pushpull --pp-all -b 2048 --arch resnet --name resnet-20-all-pp-2048-120epoc-exp-4 --layers 20 --print-freq 4  --epochs 120 --use-cuda --expansion 4
+```

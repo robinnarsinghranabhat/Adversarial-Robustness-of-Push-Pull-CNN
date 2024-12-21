@@ -1,8 +1,8 @@
 import torch.nn as nn
 import math
-import torch.utils.model_zoo as model_zoo
 from utils.downsample import Downsample
 from pushpull.PPmodule2d import PPmodule2d
+import torch.nn.functional as F
 
 """
 ResNet with Push-Pull: implemented on top of the official PyTorch ResNet implementation
@@ -42,9 +42,9 @@ class BasicBlock(nn.Module):
                 self.conv1 = nn.Sequential(Downsample(filt_size=size_lpf, stride=stride, channels=inplanes),
                                        conv3x3(inplanes, planes), )
 
-        self.bn1 = nn.BatchNorm2d(planes)
+        self.bn1 = nn.BatchNorm2d(inplanes)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(planes, planes)
+        self.conv2 = conv3x3(planes, planes * self.expansion)
         self.bn2 = nn.BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
@@ -52,18 +52,24 @@ class BasicBlock(nn.Module):
     def forward(self, x):
         residual = x
 
-        out = self.conv1(x)
-        out = self.bn1(out)
+        # instead of conv->bn->relu
+        # bn->relu->conv
+        out = self.bn1(x)
+        out = self.relu(out)
+        out = self.conv1(out)
+
+        out = self.bn2(out)
         out = self.relu(out)
 
+        # Also Add Dropout
+        out = F.dropout(out, p=0.1, training=self.training) # self.training comes from BaseClass
         out = self.conv2(out)
-        out = self.bn2(out)
+        
 
         if self.downsample is not None:
             residual = self.downsample(x)
 
         out += residual
-        out = self.relu(out)
 
         return out
 
@@ -262,6 +268,7 @@ class ResNetCifar(nn.Module):
 
 
 def resnet20(**kwargs):
+    BasicBlock.expansion = kwargs.get('expansion', 1)
     model = ResNetCifar(BasicBlock, [3, 3, 3], **kwargs)
     return model
 
