@@ -302,6 +302,7 @@ parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float, help='we
 
 parser.add_argument('--print-freq', '-p', default=10, type=int, help='print frequency (default: 10)')
 parser.add_argument('--layers', default=20, type=int, help='total number of layers (default: 20)')
+parser.add_argument('--expansion', default=1, type=int, help='total expansion of Kernels (default: 1)')
 parser.add_argument('--growth', default=12, type=int,
                     help='number of new channels per layer (default: 12)') # for densenet
 parser.add_argument('--droprate', default=0, type=float, help='dropout probability (default: 0.0)')
@@ -321,6 +322,8 @@ parser.add_argument('--scale-pp', default=2, type=float, help='upsampling factor
 
 parser.add_argument('--lpf-size', default=None, type=int, help='Size of the LPF for anti-aliasing (default: 1)')
 
+parser.add_argument('-l', '--layer-sizes', nargs='+', type=int, default=[3,3,3],
+                    help='List of 3 integers for Core Resnet Layers')
 parser.add_argument('--no-augment', dest='augment', action='store_false',
                     help='use standard augmentation (default: True)')
 parser.add_argument('--resume', default='', type=str, help='path to latest checkpoint (default: none)')
@@ -580,7 +583,7 @@ def conv3x3(in_planes, out_planes, stride=1):
 
 
 class BasicBlock(nn.Module):
-    expansion = 1
+    expansion = args.expansion
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, size_lpf=None):
         super(BasicBlock, self).__init__()
@@ -595,8 +598,8 @@ class BasicBlock(nn.Module):
 
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
-        self.conv2 = conv3x3(planes, planes)
-        self.bn2 = nn.BatchNorm2d(planes)
+        self.conv2 = conv3x3(planes, planes * self.expansion)
+        self.bn2 = nn.BatchNorm2d(planes * self.expansion)
         self.downsample = downsample
         self.stride = stride
 
@@ -667,7 +670,7 @@ class Bottleneck(nn.Module):
         return out
 
 class PushPullBlock(nn.Module):
-    expansion = 1
+    expansion = args.expansion
 
     def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None):
         super(PushPullBlock, self).__init__()
@@ -877,7 +880,8 @@ def main():
                 'train_alpha': args.train_alpha,
                 'size_lpf': args.lpf_size}
     
-    model = ResNetCifar(BasicBlock, [3, 3, 3], **rnargs)
+    model = ResNetCifar(BasicBlock, args.layer_sizes, **rnargs)
+    print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
 
     logger = None
     if args.tensorboard:
