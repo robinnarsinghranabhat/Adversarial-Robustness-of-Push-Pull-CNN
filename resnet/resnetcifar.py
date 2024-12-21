@@ -1,6 +1,5 @@
 import torch.nn as nn
 import math
-import torch.utils.model_zoo as model_zoo
 from utils.downsample import Downsample
 from pushpull.PPmodule2d import PPmodule2d
 
@@ -261,8 +260,9 @@ class ResNetCifar(nn.Module):
         return x
 
 
-def resnet20(**kwargs):
-    model = ResNetCifar(BasicBlock, [3, 3, 3], **kwargs)
+def resnet20(layer_sizes, expansion, **kwargs):
+    BasicBlock.expansion = expansion
+    model = ResNetCifar(BasicBlock, layer_sizes, **kwargs)
     return model
 
 
