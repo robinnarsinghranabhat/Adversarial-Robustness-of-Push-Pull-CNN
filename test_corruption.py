@@ -146,6 +146,8 @@ def main():
     else:
         raise RuntimeError('Fatal error - no other networks implemented')
 
+    print('Number of model parameters: {}'.format(
+        sum([p.data.nelement() for p in model.parameters()])))
     # load trained parameters in the model
     if use_cuda:
         trained_model = torch.load(expdir + '%s/' % args.name + args.modelfile + '.pth.tar')
