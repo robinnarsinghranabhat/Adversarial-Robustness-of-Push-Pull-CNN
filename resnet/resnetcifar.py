@@ -263,6 +263,7 @@ class ResNetCifar(nn.Module):
 
 def resnet20(layer_sizes, expansion, **kwargs):
     BasicBlock.expansion = expansion
+    PushPullBlock.expansion = expansion
     model = ResNetCifar(BasicBlock, layer_sizes, **kwargs)
     return model
 
