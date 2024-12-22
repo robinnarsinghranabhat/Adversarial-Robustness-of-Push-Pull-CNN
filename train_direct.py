@@ -317,6 +317,7 @@ parser.add_argument('--pp-block1', action='store_true', help='use 1st PushPull r
 parser.add_argument('--pp-all', action='store_true', help='use all PushPull residual block')
 
 parser.add_argument('--train-alpha', action='store_true', help='whether to learn the values of alpha ')
+parser.add_argument('--apply-gauss-noise', action='store_true', help='whether to apply gaussian noise to conv. output during training  (default: False)')
 parser.add_argument('--alpha-pp', default=1, type=float, help='inhibition factor (default: 1.0)')
 parser.add_argument('--scale-pp', default=2, type=float, help='upsampling factor for PP kernels (default: 2)')
 
@@ -616,7 +617,7 @@ class BasicBlock(nn.Module):
         out = self.bn1(out)
         out = self.relu(out)
 
-        if self.training:
+        if self.training and args.apply_gauss_noise:
             out = self.gaus_blur(out)
 
         out = self.conv2(out)
@@ -705,12 +706,20 @@ class PushPullBlock(nn.Module):
         self.downsample = downsample
         self.stride = stride
 
+        # Blur Params
+        self.gaus_blur_kernel_size = 3
+        self.gaus_blur_sigma = 1
+        self.gaus_blur = transforms.GaussianBlur(kernel_size=self.gaus_blur_kernel_size, sigma=self.gaus_blur_sigma)
+
     def forward(self, x):
         residual = x
 
         out = self.pp1(x)
         out = self.bn1(out)
         out = self.relu(out)
+
+        if self.training and args.apply_gauss_noise:
+            out = self.gaus_blur(out)
 
         out = self.pp2(out)
         out = self.bn2(out)
