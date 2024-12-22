@@ -136,12 +136,13 @@ class PushPullBlock(nn.Module):
                                                 padding=1, bias=False, train_alpha=train_alpha), )
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
-        self.pp2 = PPmodule2d(planes, planes, kernel_size=3, 
+        self.pp2 = PPmodule2d(planes, planes * self.expansion, kernel_size=3, 
                               padding=1, bias=False,  # alpha=alpha_pp, scale=scale_pp,
                               train_alpha=train_alpha)
-        self.bn2 = nn.BatchNorm2d(planes)
+        self.bn2 = nn.BatchNorm2d(planes * self.expansion)
         self.downsample = downsample
         self.stride = stride
+
 
     def forward(self, x):
         residual = x
