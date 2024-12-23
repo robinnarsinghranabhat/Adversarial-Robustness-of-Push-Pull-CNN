@@ -92,7 +92,7 @@ class PPmodule2d(nn.Module):
         self.up_sampler = nn.Upsample(size=(pull_size, pull_size),
                                       mode='bilinear',
                                       align_corners=True)
-        self.relu = nn.ReLU()
+        self.relu = nn.GELU()
 
     def forward(self, x):
         # with torch.no_grad():
