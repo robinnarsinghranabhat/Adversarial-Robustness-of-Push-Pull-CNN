@@ -778,7 +778,7 @@ class ResNetCifar(nn.Module):
             self.layer3 = self._make_layer(block, 64, layers[2], stride=2, size_lpf=size_lpf)
 
         self.avgpool = nn.AvgPool2d(8, stride=1)
-        self.fc = nn.Linear(64 * block.expansion, num_classes)
+        self.fc = nn.Linear(64 * layer_expansions[-1], num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
