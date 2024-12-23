@@ -54,6 +54,8 @@ parser.add_argument('--expansion', default=1, type=int, help='total expansion of
 
 parser.add_argument('-l', '--layer-sizes', nargs='+', type=int, default=[3,3,3],
                     help='List of 3 integers for Core Resnet Layers')
+parser.add_argument('-le', '--layer_expansions', '--layer-expansions', nargs='+', type=int, default=[1,1,1],
+                    help='Expansions for different Layers')
 
 parser.add_argument('--geom-transform', action='store_true', help='Apply Geometric Transformation to Test Set (default: False)')
 parser.add_argument('--arch', default='resnet', type=str, help='architecture (resnet, densenet, ...)')
@@ -108,11 +110,11 @@ def main():
     if args.arch == 'resnet':
         expdir = 'experiments/resnet-cifar/'
         rnargs = {'use_pp1': args.pushpull,
-                  'pp_block1': args.pp_block1,
-                  'pp_all': args.pp_all,
-                  'train_alpha': args.train_alpha,
-                  'size_lpf': args.lpf_size,
-                  }
+                'pp_block1': args.pp_block1,
+                'pp_all': args.pp_all,
+                'train_alpha': args.train_alpha,
+                'size_lpf': args.lpf_size,
+                'layer_expansions' :  args.layer_expansions}
 
         if args.layers == 20:
             model = resnet20(args.layer_sizes, args.expansion, **rnargs)

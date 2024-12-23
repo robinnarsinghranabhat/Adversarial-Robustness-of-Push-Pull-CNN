@@ -136,10 +136,10 @@ class PushPullBlock(nn.Module):
                                                 padding=1, bias=False, train_alpha=train_alpha), )
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.GELU()
-        self.pp2 = PPmodule2d(planes, planes * self.expansion, kernel_size=3, 
+        self.pp2 = PPmodule2d(planes, planes, kernel_size=3, 
                               padding=1, bias=False,  # alpha=alpha_pp, scale=scale_pp,
                               train_alpha=train_alpha)
-        self.bn2 = nn.BatchNorm2d(planes * self.expansion)
+        self.bn2 = nn.BatchNorm2d(planes)
         self.downsample = downsample
         self.stride = stride
 
@@ -176,8 +176,7 @@ class ResNetCifar(nn.Module):
     """
     def __init__(self, block, layers, num_classes=10,
                  use_pp1=False, pp_all=False,
-                 pp_block1=False, train_alpha=False, size_lpf=None):
-
+                 pp_block1=False, train_alpha=False, size_lpf=None, layer_expansions=[1,1,1]):
         self.inplanes = 16
         super(ResNetCifar, self).__init__()
 
@@ -191,11 +190,11 @@ class ResNetCifar(nn.Module):
 
         if pp_all:
             # Use push-pull inhibition at all layers
-            self.layer1 = self._make_layer(PushPullBlock, 16, layers[0], train_alpha=train_alpha)
+            self.layer1 = self._make_layer(PushPullBlock, 16, layers[0], train_alpha=train_alpha, expansion=layer_expansions[0])
             self.layer2 = self._make_layer(PushPullBlock, 32, layers[1], train_alpha=train_alpha,
-                                           stride=2, size_lpf=size_lpf)
+                                           stride=2, size_lpf=size_lpf, expansion=layer_expansions[1])
             self.layer3 = self._make_layer(PushPullBlock, 64, layers[2], train_alpha=train_alpha,
-                                           stride=2, size_lpf=size_lpf)
+                                           stride=2, size_lpf=size_lpf, expansion=layer_expansions[2])
         else:
             # use push-pull inhibition in the first residual block only
             if pp_block1:
@@ -216,8 +215,10 @@ class ResNetCifar(nn.Module):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-    def _make_layer(self, block, planes, blocks, stride=1, train_alpha=False, size_lpf=None):
+    def _make_layer(self, block, planes, blocks, stride=1, train_alpha=False, size_lpf=None, expansion=1):
         downsample = None
+        if expansion:
+            block.expansion = expansion
         if stride != 1 or self.inplanes != planes * block.expansion:
             if size_lpf is None:
                 downsample = nn.Sequential(
@@ -234,15 +235,15 @@ class ResNetCifar(nn.Module):
 
         layers = []
         if block is PushPullBlock:
-            layers.append(block(self.inplanes, planes, stride, downsample, train_alpha=train_alpha, size_lpf=size_lpf))
+            layers.append(block(self.inplanes, planes * block.expansion, stride, downsample, train_alpha=train_alpha, size_lpf=size_lpf))
         else:
             layers.append(block(self.inplanes, planes, stride, downsample, size_lpf=size_lpf))
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             if block is PushPullBlock:
-                layers.append(block(self.inplanes, planes, train_alpha=train_alpha, size_lpf=size_lpf))
+                layers.append(block(self.inplanes, planes * block.expansion, train_alpha=train_alpha, size_lpf=size_lpf))
             else:
-                layers.append(block(self.inplanes, planes, size_lpf=size_lpf))
+                layers.append(block(self.inplanes, planes * block.expansion, size_lpf=size_lpf))
 
         return nn.Sequential(*layers)
 
