@@ -284,7 +284,6 @@ def validate_corrupted(distortion_name, model, criterion=None, adversarial_eps=0
                 output = model(torch.autograd.Variable(x_adversarial))
                 loss = criterion(output, target)
             
-            # import pdb; pdb.set_trace()
             # measure accuracy
             prec1 = accuracy(output, target, topk=(1,))[0]
             top1.update(prec1.item(), data.size(0))

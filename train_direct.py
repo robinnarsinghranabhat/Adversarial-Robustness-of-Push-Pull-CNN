@@ -395,6 +395,7 @@ class PPmodule2d(nn.Module):
         # Push kernels (is the one for which the weights are learned - the pull kernel is derived from it)
         self.push = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias=bias)
 
+
         """
         # Bias: push and pull convolutions will have bias=0.
         # If the PP kernel has bias, it is computed next to the combination of the 2 convolutions
@@ -410,6 +411,14 @@ class PPmodule2d(nn.Module):
             self.register_parameter('bias', None)
         """
 
+        # Attention mechanism
+        self.attention = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
+            nn.GELU(),
+            nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
+            nn.Sigmoid()
+        )
         # Configuration of the Push-Pull inhibition
         if not self.train_alpha:
             # when alpha is an hyper-parameter (as in [1])
@@ -458,6 +467,10 @@ class PPmodule2d(nn.Module):
                                   self.push.stride,
                                   self.pull_padding, self.push.dilation,
                                   self.push.groups))
+        
+        ## Apply Attention to push kernels
+        attention_weights = self.attention(push)
+        push = push * attention_weights
 
         alpha = self.alpha
         if self.train_alpha:
@@ -906,7 +919,6 @@ def main():
     
     model = ResNetCifar(BasicBlock, args.layer_sizes, **rnargs)
     print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
-
     logger = None
     if args.tensorboard:
         ustr = datetime.datetime.now().strftime("%y-%m-%d_%H-%M_") + uuid.uuid4().hex[:3]
