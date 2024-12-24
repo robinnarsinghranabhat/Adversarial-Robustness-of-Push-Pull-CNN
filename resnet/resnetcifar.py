@@ -142,7 +142,7 @@ class SEBlock(nn.Module):
 class PushPullBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=True):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=False):
         super(PushPullBlock, self).__init__()
         if stride == 1:
             self.pp1 = PPmodule2d(inplanes, planes, kernel_size=3, padding=1, bias=False,

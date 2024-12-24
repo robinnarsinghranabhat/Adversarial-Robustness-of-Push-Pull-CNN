@@ -384,7 +384,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=False):
+                 use_attn=True):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -730,7 +730,7 @@ class Bottleneck(nn.Module):
 class PushPullBlock(nn.Module):
     expansion = args.expansion
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=True):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=False):
         super(PushPullBlock, self).__init__()
         if stride == 1:
             self.pp1 = PPmodule2d(inplanes, planes, kernel_size=3, padding=1, bias=False,
