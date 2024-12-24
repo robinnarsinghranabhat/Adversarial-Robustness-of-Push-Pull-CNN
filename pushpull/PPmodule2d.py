@@ -65,6 +65,15 @@ class PPmodule2d(nn.Module):
             self.register_parameter('bias', None)
         """
 
+        # Attention mechanism
+        self.attention = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
+            nn.GELU(),
+            nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
+            nn.Sigmoid()
+        )
+
         # Configuration of the Push-Pull inhibition
         if not self.train_alpha:
             # when alpha is an hyper-parameter (as in [1])
@@ -113,6 +122,10 @@ class PPmodule2d(nn.Module):
                                   self.push.stride,
                                   self.pull_padding, self.push.dilation,
                                   self.push.groups))
+
+        ## Apply Attention to push kernels
+        attention_weights = self.attention(push)
+        push = push * attention_weights
 
         alpha = self.alpha
         if self.train_alpha:
