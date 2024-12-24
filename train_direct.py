@@ -318,6 +318,8 @@ parser.add_argument('--pp-all', action='store_true', help='use all PushPull resi
 
 parser.add_argument('--train-alpha', action='store_true', help='whether to learn the values of alpha ')
 parser.add_argument('--apply-gauss-noise', action='store_true', help='whether to apply gaussian noise to conv. output during training  (default: False)')
+parser.add_argument('--use-se', action='store_true', help='whether to apply SE block (default: False)')
+parser.add_argument('--use-pp-attn', action='store_true', help='whether to apply attn inside pp module  (default: False)')
 parser.add_argument('--alpha-pp', default=1, type=float, help='inhibition factor (default: 1.0)')
 parser.add_argument('--scale-pp', default=2, type=float, help='upsampling factor for PP kernels (default: 2)')
 
@@ -381,7 +383,8 @@ class PPmodule2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
-                 train_alpha=False):
+                 train_alpha=False,
+                 use_attn=False):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -412,13 +415,15 @@ class PPmodule2d(nn.Module):
         """
 
         # Attention mechanism
-        self.attention = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
-            nn.GELU(),
-            nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
-            nn.Sigmoid()
-        )
+        self.use_attn = use_attn
+        if self.use_attn:
+            self.attention = nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
+                nn.GELU(),
+                nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
+                nn.Sigmoid()
+            )
         # Configuration of the Push-Pull inhibition
         if not self.train_alpha:
             # when alpha is an hyper-parameter (as in [1])
@@ -469,8 +474,9 @@ class PPmodule2d(nn.Module):
                                   self.push.groups))
         
         ## Apply Attention to push kernels
-        attention_weights = self.attention(push)
-        push = push * attention_weights
+        if self.use_attn:
+            attention_weights = self.attention(push)
+            push = push * attention_weights
 
         alpha = self.alpha
         if self.train_alpha:
@@ -647,6 +653,29 @@ class BasicBlock(nn.Module):
 
         return out
 
+
+class SEBlock(nn.Module):
+    """Squeeze-and-Excitation Block"""
+    def __init__(self, channels, reduction=4):
+        super(SEBlock, self).__init__()
+        self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc1 = nn.Linear(channels, channels // reduction, bias=False)
+        self.relu = nn.ReLU(inplace=True)
+        self.fc2 = nn.Linear(channels // reduction, channels, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        batch, channels, _, _ = x.size()
+        # Squeeze
+        out = self.global_avg_pool(x).view(batch, channels)
+        # Excitation
+        out = self.fc1(out)
+        out = self.relu(out)
+        out = self.fc2(out)
+        out = self.sigmoid(out).view(batch, channels, 1, 1)
+        return x * out
+
+
 class Bottleneck(nn.Module):
     expansion = 4
 
@@ -698,7 +727,7 @@ class Bottleneck(nn.Module):
 class PushPullBlock(nn.Module):
     expansion = args.expansion
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=True):
         super(PushPullBlock, self).__init__()
         if stride == 1:
             self.pp1 = PPmodule2d(inplanes, planes, kernel_size=3, padding=1, bias=False,
@@ -719,13 +748,12 @@ class PushPullBlock(nn.Module):
                               padding=1, bias=False,  # alpha=alpha_pp, scale=scale_pp,
                               train_alpha=train_alpha)
         self.bn2 = nn.BatchNorm2d(planes)
+        self.use_se = use_se
+        if self.use_se:
+            self.se = SEBlock(planes, reduction=4)  # Squeeze-and-Excitation block
         self.downsample = downsample
         self.stride = stride
 
-        # Blur Params
-        self.gaus_blur_kernel_size = 3
-        self.gaus_blur_sigma = 1
-        self.gaus_blur = transforms.GaussianBlur(kernel_size=self.gaus_blur_kernel_size, sigma=self.gaus_blur_sigma)
 
     def forward(self, x):
         residual = x
@@ -739,6 +767,10 @@ class PushPullBlock(nn.Module):
 
         out = self.pp2(out)
         out = self.bn2(out)
+
+        # Apply Squeeze-and-Excitation
+        if self.use_se:
+            out = self.se(out)
 
         if self.downsample is not None:
             residual = self.downsample(x)
@@ -761,13 +793,13 @@ class ResNetCifar(nn.Module):
     """
     def __init__(self, block, layers, num_classes=10,
                  use_pp1=False, pp_all=False,
-                 pp_block1=False, train_alpha=False, size_lpf=None, layer_expansions=[1,1,1]):
+                 pp_block1=False, train_alpha=False, size_lpf=None, layer_expansions=[1,1,1], use_se=False, use_pp_attn=False):
 
         self.inplanes = 16
         super(ResNetCifar, self).__init__()
 
         if use_pp1:
-            self.conv1 = PPmodule2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False, train_alpha=train_alpha)
+            self.conv1 = PPmodule2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False, train_alpha=train_alpha, use_attn=use_pp_attn)
         else:
             self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
 
