@@ -115,11 +115,32 @@ class Bottleneck(nn.Module):
 
         return out
 
+class SEBlock(nn.Module):
+    """Squeeze-and-Excitation Block"""
+    def __init__(self, channels, reduction=4):
+        super(SEBlock, self).__init__()
+        self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.fc1 = nn.Linear(channels, channels // reduction, bias=False)
+        self.relu = nn.ReLU(inplace=True)
+        self.fc2 = nn.Linear(channels // reduction, channels, bias=False)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x):
+        batch, channels, _, _ = x.size()
+        # Squeeze
+        out = self.global_avg_pool(x).view(batch, channels)
+        # Excitation
+        out = self.fc1(out)
+        out = self.relu(out)
+        out = self.fc2(out)
+        out = self.sigmoid(out).view(batch, channels, 1, 1)
+        return x * out
+
 
 class PushPullBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=True):
         super(PushPullBlock, self).__init__()
         if stride == 1:
             self.pp1 = PPmodule2d(inplanes, planes, kernel_size=3, padding=1, bias=False,
@@ -140,6 +161,9 @@ class PushPullBlock(nn.Module):
                               padding=1, bias=False,  # alpha=alpha_pp, scale=scale_pp,
                               train_alpha=train_alpha)
         self.bn2 = nn.BatchNorm2d(planes)
+        self.use_se = use_se
+        if self.use_se:
+            self.se = SEBlock(planes, reduction=4)  # Squeeze-and-Excitation block
         self.downsample = downsample
         self.stride = stride
 
@@ -153,6 +177,10 @@ class PushPullBlock(nn.Module):
 
         out = self.pp2(out)
         out = self.bn2(out)
+
+        # Apply Squeeze-and-Excitation
+        if self.use_se:
+            out = self.se(out)
 
         if self.downsample is not None:
             residual = self.downsample(x)

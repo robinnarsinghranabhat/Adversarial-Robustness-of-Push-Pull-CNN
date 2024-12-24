@@ -36,7 +36,8 @@ class PPmodule2d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
-                 train_alpha=False):
+                 train_alpha=False,
+                 use_attn=True):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -66,14 +67,15 @@ class PPmodule2d(nn.Module):
         """
 
         # Attention mechanism
-        self.attention = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
-            nn.GELU(),
-            nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
-            nn.Sigmoid()
-        )
-
+        self.use_attn = use_attn
+        if self.use_attn:
+            self.attention = nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
+                nn.GELU(),
+                nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
+                nn.Sigmoid()
+            )
         # Configuration of the Push-Pull inhibition
         if not self.train_alpha:
             # when alpha is an hyper-parameter (as in [1])
@@ -122,10 +124,11 @@ class PPmodule2d(nn.Module):
                                   self.push.stride,
                                   self.pull_padding, self.push.dilation,
                                   self.push.groups))
-
+        
         ## Apply Attention to push kernels
-        attention_weights = self.attention(push)
-        push = push * attention_weights
+        if self.use_attn:
+            attention_weights = self.attention(push)
+            push = push * attention_weights
 
         alpha = self.alpha
         if self.train_alpha:
