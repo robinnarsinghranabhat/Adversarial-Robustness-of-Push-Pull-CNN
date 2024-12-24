@@ -384,7 +384,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=False):
+                 use_attn=True):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -793,13 +793,13 @@ class ResNetCifar(nn.Module):
     """
     def __init__(self, block, layers, num_classes=10,
                  use_pp1=False, pp_all=False,
-                 pp_block1=False, train_alpha=False, size_lpf=None, layer_expansions=[1,1,1], use_se=False, use_pp_attn=False):
+                 pp_block1=False, train_alpha=False, size_lpf=None, layer_expansions=[1,1,1]):
 
         self.inplanes = 16
         super(ResNetCifar, self).__init__()
 
         if use_pp1:
-            self.conv1 = PPmodule2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False, train_alpha=train_alpha, use_attn=use_pp_attn)
+            self.conv1 = PPmodule2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False, train_alpha=train_alpha)
         else:
             self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
 
