@@ -384,7 +384,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=True):
+                 use_attn=False):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -609,7 +609,7 @@ def conv3x3(in_planes, out_planes, stride=1):
 class BasicBlock(nn.Module):
     expansion = args.expansion
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, size_lpf=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, size_lpf=None, use_se=True):
         super(BasicBlock, self).__init__()
         if stride == 1:
             self.conv1 = conv3x3(inplanes, planes)
@@ -625,6 +625,9 @@ class BasicBlock(nn.Module):
         self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes * self.expansion)
         self.bn2 = nn.BatchNorm2d(planes * self.expansion)
+        self.use_se = use_se
+        if self.use_se:
+            self.se = SEBlock(planes, reduction=4)  # Squeeze-and-Excitation block
         self.downsample = downsample
         self.stride = stride
         
@@ -646,6 +649,10 @@ class BasicBlock(nn.Module):
 
         out = self.conv2(out)
         out = self.bn2(out)
+
+        # Apply Squeeze-and-Excitation
+        if self.use_se:
+            out = self.se(out)
 
         if self.downsample is not None:
             residual = self.downsample(x)
@@ -730,7 +737,7 @@ class Bottleneck(nn.Module):
 class PushPullBlock(nn.Module):
     expansion = args.expansion
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=False):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=True):
         super(PushPullBlock, self).__init__()
         if stride == 1:
             self.pp1 = PPmodule2d(inplanes, planes, kernel_size=3, padding=1, bias=False,
