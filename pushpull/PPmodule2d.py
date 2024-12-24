@@ -37,7 +37,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=False):
+                 use_attn=True):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -72,7 +72,7 @@ class PPmodule2d(nn.Module):
             self.attention = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
                 nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
-                nn.GELU(),
+                nn.ReLU(inplace=True),
                 nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
                 nn.Sigmoid()
             )
@@ -103,7 +103,8 @@ class PPmodule2d(nn.Module):
         self.up_sampler = nn.Upsample(size=(pull_size, pull_size),
                                       mode='bilinear',
                                       align_corners=True)
-        self.relu = nn.GELU()
+        # self.relu = nn.GELU()
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         # with torch.no_grad():

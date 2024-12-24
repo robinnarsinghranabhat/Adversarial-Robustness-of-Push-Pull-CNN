@@ -420,7 +420,7 @@ class PPmodule2d(nn.Module):
             self.attention = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
                 nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
-                nn.GELU(),
+                nn.ReLU(inplace=True),
                 nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
                 nn.Sigmoid()
             )
@@ -451,7 +451,8 @@ class PPmodule2d(nn.Module):
         self.up_sampler = nn.Upsample(size=(pull_size, pull_size),
                                       mode='bilinear',
                                       align_corners=True)
-        self.relu = nn.GELU()
+        # self.relu = nn.GELU()
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         # with torch.no_grad():
@@ -620,7 +621,8 @@ class BasicBlock(nn.Module):
                                        conv3x3(inplanes, planes), )
 
         self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.GELU()
+        # self.relu = nn.GELU()
+        self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes * self.expansion)
         self.bn2 = nn.BatchNorm2d(planes * self.expansion)
         self.downsample = downsample
@@ -698,7 +700,8 @@ class Bottleneck(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
-        self.relu = nn.GELU()
+        # self.relu = nn.GELU()
+        self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
 
@@ -727,7 +730,7 @@ class Bottleneck(nn.Module):
 class PushPullBlock(nn.Module):
     expansion = args.expansion
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=True):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=False):
         super(PushPullBlock, self).__init__()
         if stride == 1:
             self.pp1 = PPmodule2d(inplanes, planes, kernel_size=3, padding=1, bias=False,
@@ -743,7 +746,8 @@ class PushPullBlock(nn.Module):
                                      PPmodule2d(inplanes, planes, kernel_size=3,
                                                 padding=1, bias=False, train_alpha=train_alpha), )
         self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.GELU()
+        self.relu = nn.ReLU(inplace=True)
+        # self.relu = nn.GELU()
         self.pp2 = PPmodule2d(planes, planes, kernel_size=3, 
                               padding=1, bias=False,  # alpha=alpha_pp, scale=scale_pp,
                               train_alpha=train_alpha)
@@ -804,7 +808,8 @@ class ResNetCifar(nn.Module):
             self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
 
         self.bn1 = nn.BatchNorm2d(16)
-        self.relu = nn.GELU()
+        self.relu = nn.ReLU(inplace=True)
+        # self.relu = nn.GELU()
 
         if pp_all:
             # Use push-pull inhibition at all layers
