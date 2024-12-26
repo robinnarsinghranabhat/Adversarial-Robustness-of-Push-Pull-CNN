@@ -74,7 +74,8 @@ class PPmodule2d(nn.Module):
                 # nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
                 nn.Flatten(start_dim=1),
                 nn.Linear(out_channels, out_channels // 4, bias=True),
-                nn.ReLU(inplace=True),
+                # nn.ReLU(inplace=True),
+                nn.GELU(),
                 # nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
                 nn.Linear(out_channels // 4, out_channels, bias=True),
                 nn.Sigmoid()
@@ -106,8 +107,8 @@ class PPmodule2d(nn.Module):
         self.up_sampler = nn.Upsample(size=(pull_size, pull_size),
                                       mode='bilinear',
                                       align_corners=True)
-        # self.relu = nn.GELU()
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.GELU()
+        # self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         # with torch.no_grad():
