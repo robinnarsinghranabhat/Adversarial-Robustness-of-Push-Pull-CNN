@@ -37,7 +37,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=True):
+                 use_attn=False):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -103,9 +103,18 @@ class PPmodule2d(nn.Module):
 
         # upsample the pull kernel from the push kernel
         self.pull_padding = pull_size // 2 - push_size // 2 + padding
-        self.up_sampler = nn.Upsample(size=(pull_size, pull_size),
-                                      mode='bilinear',
-                                      align_corners=True)
+        # self.up_sampler = nn.Upsample(size=(pull_size, pull_size),
+        #                               mode='bilinear',
+        #                               align_corners=True)
+        out_channel_size = self.push.weight[0].size()[0]
+        self.custom_upsampler = nn.ConvTranspose2d(
+            in_channels=in_channels,  # Out channels of push Conv2D
+            out_channels=out_channel_size,
+            kernel_size=3,  # Choose kernel size
+            stride=2,  # Scaling factor
+            padding=0,  # Adjust as needed
+            output_padding=0  # For alignment
+        )
         # self.relu = nn.GELU()
         self.relu = nn.ReLU(inplace=True)
 
@@ -114,7 +123,8 @@ class PPmodule2d(nn.Module):
         if self.scale_factor == 1:
             pull_weights = self.push.weight
         else:
-            pull_weights = self.up_sampler(self.push.weight)
+            # pull_weights = self.up_sampler(self.push.weight)
+            pull_weights = self.custom_upsampler(self.push.weight)
         # pull_weights.requires_grad = False
 
         bias = self.push.bias
