@@ -461,7 +461,8 @@ class PPmodule2d(nn.Module):
             kernel_size=3,  # Choose kernel size
             stride=2,  # Scaling factor
             padding=0,  # Adjust as needed
-            output_padding=0  # For alignment
+            output_padding=0,  # For alignment
+            groups=in_channels,
         )
         # self.relu = nn.GELU()
         self.relu = nn.ReLU(inplace=True)
