@@ -114,7 +114,7 @@ class PPmodule2d(nn.Module):
             stride=2,  # Scaling factor
             padding=0,  # Adjust as needed
             output_padding=0,  # For alignment
-            groups=in_channels,
+            # groups=in_channels,
         )
         # self.relu = nn.GELU()
         self.relu = nn.ReLU(inplace=True)
@@ -134,7 +134,7 @@ class PPmodule2d(nn.Module):
 
         push = self.relu(self.push(x))
         pull = self.relu(F.conv2d(x,
-                                  -pull_weights,
+                                  pull_weights,
                                   bias,
                                   self.push.stride,
                                   self.pull_padding, self.push.dilation,
