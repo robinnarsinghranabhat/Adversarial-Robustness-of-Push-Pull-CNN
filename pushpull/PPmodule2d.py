@@ -37,7 +37,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=False):
+                 use_attn=True):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -71,9 +71,12 @@ class PPmodule2d(nn.Module):
         if self.use_attn:
             self.attention = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
-                nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
+                # nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
+                nn.Flatten(start_dim=1),
+                nn.Linear(out_channels, out_channels // 4, bias=True),
                 nn.ReLU(inplace=True),
-                nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
+                # nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
+                nn.Linear(out_channels // 4, out_channels, bias=True),
                 nn.Sigmoid()
             )
         # Configuration of the Push-Pull inhibition
@@ -129,6 +132,7 @@ class PPmodule2d(nn.Module):
         ## Apply Attention to push kernels
         if self.use_attn:
             attention_weights = self.attention(push)
+            attention_weights = attention_weights.view( ( -1, attention_weights.shape[-1], 1, 1 ))
             push = push * attention_weights
 
         alpha = self.alpha
