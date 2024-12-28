@@ -384,7 +384,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=True):
+                 use_attn=False):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -454,8 +454,8 @@ class PPmodule2d(nn.Module):
         self.up_sampler = nn.Upsample(size=(pull_size, pull_size),
                                       mode='bilinear',
                                       align_corners=True)
-        # self.relu = nn.GELU()
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.GELU()
+        # self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         # with torch.no_grad():
