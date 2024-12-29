@@ -477,12 +477,13 @@ class PPmodule2d(nn.Module):
                                   self.pull_padding, self.push.dilation,
                                   self.push.groups))
         
-        ## Apply Attention to push kernels
+        ## Apply Attention to pull kernels
+        ## Emphasize which channels to surpress more
         if self.use_attn:
-            attention_weights = self.attention(push)
+            attention_weights = self.attention(pull)
             attention_weights = attention_weights.view( ( -1, attention_weights.shape[-1], 1, 1 ))
-            push = push * attention_weights
-
+            pull = pull * attention_weights
+            # push = push * attention_weights
         alpha = self.alpha
         if self.train_alpha:
             # alpha is greater or equal than 0
