@@ -384,7 +384,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=True):
+                 use_attn=False):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -731,7 +731,7 @@ from push_pull_v2 import PushPullConv2DUnit
 class PushPullBlock(nn.Module):
     expansion = args.expansion
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=False, device=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=True, device=None):
         super(PushPullBlock, self).__init__()
         if stride == 1:
             self.pp1 = PushPullConv2DUnit(inplanes, planes, kernel_size=(3,3), padding=1, bias=False,
