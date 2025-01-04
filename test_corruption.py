@@ -61,6 +61,11 @@ parser.add_argument('--geom-transform', action='store_true', help='Apply Geometr
 parser.add_argument('--arch', default='resnet', type=str, help='architecture (resnet, densenet, ...)')
 parser.add_argument('--name', default='01-20', type=str, help='name of experiment-model')
 
+## from ppv2
+parser.add_argument('--pull_inhibition_strength', type=float, default=1.0)
+parser.add_argument('--trainable_pull_inhibition', action='store_true', default=False)
+
+
 best_prec1 = 0
 args = parser.parse_args()
 use_cuda = torch.cuda.is_available() & args.use_cuda
@@ -114,7 +119,10 @@ def main():
                 'pp_all': args.pp_all,
                 'train_alpha': args.train_alpha,
                 'size_lpf': args.lpf_size,
-                'layer_expansions' :  args.layer_expansions}
+                'layer_expansions' :  args.layer_expansions,
+                'trainable_pull_inhibition' : args.trainable_pull_inhibition,
+                'pull_inhibition_strength' : args.pull_inhibition_strength,
+                }
 
         if args.layers == 20:
             model = resnet20(args.layer_sizes, args.expansion, **rnargs)

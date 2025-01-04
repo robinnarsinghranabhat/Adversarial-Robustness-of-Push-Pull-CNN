@@ -7,24 +7,25 @@ from pushpull.PPmodule2d import PPmodule2d
 ResNet with Push-Pull: implemented on top of the official PyTorch ResNet implementation
 """
 
-__all__ = ['ResNetCifar', 'resnet20', 'resnet32', 'resnet44', 'resnet56']
+__all__ = ["ResNetCifar", "resnet20", "resnet32", "resnet44", "resnet56"]
 
 model_urls = {
-    'resnet20': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
-    'resnet20-pp': 'https://download.pytorch.org/models/resnet18-5c106cde.pth',
-    'resnet32': 'https://download.pytorch.org/models/resnet34-333f7ec4.pth',
-    'resnet32-pp': 'https://download.pytorch.org/models/resnet50-19c8e357.pth',
-    'resnet44': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
-    'resnet44-pp': 'https://download.pytorch.org/models/resnet101-5d3b4d8f.pth',
-    'resnet56': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
-    'resnet56-pp': 'https://download.pytorch.org/models/resnet152-b121ed2d.pth',
+    "resnet20": "https://download.pytorch.org/models/resnet18-5c106cde.pth",
+    "resnet20-pp": "https://download.pytorch.org/models/resnet18-5c106cde.pth",
+    "resnet32": "https://download.pytorch.org/models/resnet34-333f7ec4.pth",
+    "resnet32-pp": "https://download.pytorch.org/models/resnet50-19c8e357.pth",
+    "resnet44": "https://download.pytorch.org/models/resnet101-5d3b4d8f.pth",
+    "resnet44-pp": "https://download.pytorch.org/models/resnet101-5d3b4d8f.pth",
+    "resnet56": "https://download.pytorch.org/models/resnet152-b121ed2d.pth",
+    "resnet56-pp": "https://download.pytorch.org/models/resnet152-b121ed2d.pth",
 }
 
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+    return nn.Conv2d(
+        in_planes, out_planes, kernel_size=3, stride=stride, padding=1, bias=False
+    )
 
 
 class BasicBlock(nn.Module):
@@ -38,8 +39,10 @@ class BasicBlock(nn.Module):
             if size_lpf is None:
                 self.conv1 = conv3x3(inplanes, planes, stride=stride)
             else:
-                self.conv1 = nn.Sequential(Downsample(filt_size=size_lpf, stride=stride, channels=inplanes),
-                                       conv3x3(inplanes, planes), )
+                self.conv1 = nn.Sequential(
+                    Downsample(filt_size=size_lpf, stride=stride, channels=inplanes),
+                    conv3x3(inplanes, planes),
+                )
 
         self.bn1 = nn.BatchNorm2d(planes)
         # self.relu = nn.GELU()
@@ -76,16 +79,17 @@ class Bottleneck(nn.Module):
         self.conv1 = nn.Conv2d(inplanes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
         if stride == 1:
-            self.conv2 = nn.Conv2d(planes, planes, kernel_size=3,
-                                   padding=1, bias=False)
+            self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, padding=1, bias=False)
         else:
             if size_lpf is None:
-                self.conv2 = nn.Conv2d(planes, planes, kernel_size=3,
-                                       padding=1, bias=False, stride=stride)
+                self.conv2 = nn.Conv2d(
+                    planes, planes, kernel_size=3, padding=1, bias=False, stride=stride
+                )
             else:
-                self.conv2 = nn.Sequential(Downsample(filt_size=size_lpf, stride=stride, channels=planes),
-                                           nn.Conv2d(planes, planes, kernel_size=3,
-                                                     padding=1, bias=False),)
+                self.conv2 = nn.Sequential(
+                    Downsample(filt_size=size_lpf, stride=stride, channels=planes),
+                    nn.Conv2d(planes, planes, kernel_size=3, padding=1, bias=False),
+                )
 
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
@@ -117,8 +121,10 @@ class Bottleneck(nn.Module):
 
         return out
 
+
 class SEBlock(nn.Module):
     """Squeeze-and-Excitation Block"""
+
     def __init__(self, channels, reduction=4):
         super(SEBlock, self).__init__()
         self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
@@ -138,22 +144,57 @@ class SEBlock(nn.Module):
         out = self.sigmoid(out).view(batch, channels, 1, 1)
         return x * out
 
+
 from push_pull_v2 import PushPullConv2DUnit
+
+
 class PushPullBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=False, device=None):
+    def __init__(
+        self,
+        inplanes,
+        planes,
+        stride=1,
+        downsample=None,
+        train_alpha=False,
+        size_lpf=None,
+        use_se=False,
+        device=None,
+        pull_inhibition_strength=1,
+        trainable_pull_inhibition=False,
+    ):
         super(PushPullBlock, self).__init__()
         if stride == 1:
-            self.pp1 = PushPullConv2DUnit(inplanes, planes, kernel_size=(3,3), padding=1, bias=False,
-                                          stride=1, avg_kernel_size=3, device=device)
+            self.pp1 = PushPullConv2DUnit(
+                inplanes,
+                planes,
+                kernel_size=(3, 3),
+                padding=1,
+                bias=False,
+                stride=1,
+                avg_kernel_size=3,
+                device=device,
+                trainable_pull_inhibition=trainable_pull_inhibition,
+                pull_inhibition_strength=pull_inhibition_strength,
+            )
             # self.pp1 = PPmodule2d(inplanes, planes, kernel_size=3, padding=1, bias=False,
             #                       # alpha=alpha_pp, scale=scale_pp,
             #                       train_alpha=train_alpha)
         else:
             if size_lpf is None:
-                self.pp1 = PushPullConv2DUnit(inplanes, planes, kernel_size=(3,3), padding=1, bias=False,
-                                          stride=stride, avg_kernel_size=3, device=device)
+                self.pp1 = PushPullConv2DUnit(
+                    inplanes,
+                    planes,
+                    kernel_size=(3, 3),
+                    padding=1,
+                    bias=False,
+                    stride=stride,
+                    avg_kernel_size=3,
+                    device=device,
+                    trainable_pull_inhibition=trainable_pull_inhibition,
+                    pull_inhibition_strength=pull_inhibition_strength,
+                )
                 # self.pp1 = PPmodule2d(inplanes, planes, kernel_size=3, padding=1, bias=False,
                 #                       # alpha=alpha_pp, scale=scale_pp,
                 #                       train_alpha=train_alpha, stride=stride)
@@ -164,10 +205,19 @@ class PushPullBlock(nn.Module):
         self.bn1 = nn.BatchNorm2d(planes)
         self.relu = nn.ReLU(inplace=True)
         # self.relu = nn.GELU()
-        self.pp2 = PushPullConv2DUnit(planes, planes, kernel_size=(3,3), padding=1, bias=False,
-                                          stride=1, avg_kernel_size=3,
-                                          device=device)
-        # self.pp2 = PPmodule2d(planes, planes, kernel_size=3, 
+        self.pp2 = PushPullConv2DUnit(
+            planes,
+            planes,
+            kernel_size=(3, 3),
+            padding=1,
+            bias=False,
+            stride=1,
+            avg_kernel_size=3,
+            device=device,
+            trainable_pull_inhibition=trainable_pull_inhibition,
+            pull_inhibition_strength=pull_inhibition_strength,
+        )
+        # self.pp2 = PPmodule2d(planes, planes, kernel_size=3,
         #                       padding=1, bias=False,  # alpha=alpha_pp, scale=scale_pp,
         #                       train_alpha=train_alpha)
         self.bn2 = nn.BatchNorm2d(planes)
@@ -176,7 +226,6 @@ class PushPullBlock(nn.Module):
             self.se = SEBlock(planes, reduction=4)  # Squeeze-and-Excitation block
         self.downsample = downsample
         self.stride = stride
-
 
     def forward(self, x):
         residual = x
@@ -212,26 +261,49 @@ class ResNetCifar(nn.Module):
         train_alpha (bool, optional): if ''True'', the inhibition strength 'alpha' is trainable (default: False)
         size_lpf (int, optional): if specified, it uses an LPF filter of size ('size_lpf' x 'size_lpf') before downsampling operation (Zhang's paper) (default: None)
     """
-    def __init__(self, block, layers, num_classes=10,
-                 use_pp1=False, pp_all=False,
-                 pp_block1=False, train_alpha=False, size_lpf=None, layer_expansions=[1,1,1], use_cuda=True):
+
+    def __init__(
+        self,
+        block,
+        layers,
+        num_classes=10,
+        use_pp1=False,
+        pp_all=False,
+        pp_block1=False,
+        train_alpha=False,
+        size_lpf=None,
+        layer_expansions=[1, 1, 1],
+        use_cuda=True,
+        pull_inhibition_strength=1,
+        trainable_pull_inhibition=False,
+    ):
         self.inplanes = 16
         super(ResNetCifar, self).__init__()
+
+        self.pull_inhibition_strength = pull_inhibition_strength
+        self.trainable_pull_inhibition = trainable_pull_inhibition
+
 
         self.use_cuda = use_cuda
 
         if use_pp1:
             # self.conv1 = PPmodule2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False, train_alpha=train_alpha)
-            self.conv1 = PushPullConv2DUnit(3, out_channels=16,
-                                                kernel_size=(3, 3),
-                                                avg_kernel_size=3,
-                                                # pull_inhibition_strength=args.pull_inhibition_strength,
-                                                # trainable_pull_inhibition=args.trainable_pull_inhibition,
-                                                stride=1, padding=1,
-                                                bias=False,
-                                                device="cuda" if self.use_cuda else None )
+            self.conv1 = PushPullConv2DUnit(
+                3,
+                out_channels=16,
+                kernel_size=(3, 3),
+                avg_kernel_size=3,
+                pull_inhibition_strength=self.pull_inhibition_strength,
+                trainable_pull_inhibition=self.trainable_pull_inhibition,
+                stride=1,
+                padding=1,
+                bias=False,
+                device="cuda" if self.use_cuda else None,
+            )
         else:
-            self.conv1 = nn.Conv2d(3, 16, kernel_size=3, stride=1, padding=1, bias=False)
+            self.conv1 = nn.Conv2d(
+                3, 16, kernel_size=3, stride=1, padding=1, bias=False
+            )
 
         self.bn1 = nn.BatchNorm2d(16)
         self.relu = nn.ReLU(inplace=True)
@@ -239,11 +311,15 @@ class ResNetCifar(nn.Module):
 
         if pp_all:
             # Use push-pull inhibition at all layers
-            self.layer1 = self._make_layer(PushPullBlock, 16, layers[0], expansion=layer_expansions[0])
-            self.layer2 = self._make_layer(PushPullBlock, 32, layers[1], 
-                                           stride=2, expansion=layer_expansions[1])
-            self.layer3 = self._make_layer(PushPullBlock, 64, layers[2],
-                                           stride=2, expansion=layer_expansions[2])
+            self.layer1 = self._make_layer(
+                PushPullBlock, 16, layers[0], expansion=layer_expansions[0]
+            )
+            self.layer2 = self._make_layer(
+                PushPullBlock, 32, layers[1], stride=2, expansion=layer_expansions[1]
+            )
+            self.layer3 = self._make_layer(
+                PushPullBlock, 64, layers[2], stride=2, expansion=layer_expansions[2]
+            )
         else:
             # use push-pull inhibition in the first residual block only
             if pp_block1:
@@ -251,8 +327,12 @@ class ResNetCifar(nn.Module):
                 self.layer1 = self._make_layer(PushPullBlock, 16, layers[0])
             else:
                 self.layer1 = self._make_layer(block, 16, layers[0])
-            self.layer2 = self._make_layer(block, 32, layers[1], stride=2, size_lpf=size_lpf)
-            self.layer3 = self._make_layer(block, 64, layers[2], stride=2, size_lpf=size_lpf)
+            self.layer2 = self._make_layer(
+                block, 32, layers[1], stride=2, size_lpf=size_lpf
+            )
+            self.layer3 = self._make_layer(
+                block, 64, layers[2], stride=2, size_lpf=size_lpf
+            )
 
         self.avgpool = nn.AvgPool2d(8, stride=1)
         self.fc = nn.Linear(64 * layer_expansions[-1], num_classes)
@@ -260,42 +340,86 @@ class ResNetCifar(nn.Module):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 n = m.kernel_size[0] * m.kernel_size[1] * m.out_channels
-                m.weight.data.normal_(0, math.sqrt(2. / n))
+                m.weight.data.normal_(0, math.sqrt(2.0 / n))
             elif isinstance(m, nn.BatchNorm2d):
                 m.weight.data.fill_(1)
                 m.bias.data.zero_()
 
-    def _make_layer(self, block, planes, blocks, stride=1, train_alpha=False, size_lpf=None, expansion=1):
+    def _make_layer(
+        self,
+        block,
+        planes,
+        blocks,
+        stride=1,
+        train_alpha=False,
+        size_lpf=None,
+        expansion=1,
+    ):
         downsample = None
         if expansion:
             block.expansion = expansion
         if stride != 1 or self.inplanes != planes * block.expansion:
             if size_lpf is None:
                 downsample = nn.Sequential(
-                    nn.Conv2d(self.inplanes, planes * block.expansion,
-                              kernel_size=1, stride=stride, bias=False),
+                    nn.Conv2d(
+                        self.inplanes,
+                        planes * block.expansion,
+                        kernel_size=1,
+                        stride=stride,
+                        bias=False,
+                    ),
                     nn.BatchNorm2d(planes * block.expansion),
                 )
             else:
                 # downsample according to Nyquist (from the paper of Zhang)
-                downsample = nn.Sequential(Downsample(filt_size=size_lpf, stride=stride, channels=self.inplanes),
-                                           nn.Conv2d(self.inplanes, planes * block.expansion, kernel_size=1, bias=False),
-                                           nn.BatchNorm2d(planes * block.expansion)
-                                           )
+                downsample = nn.Sequential(
+                    Downsample(
+                        filt_size=size_lpf, stride=stride, channels=self.inplanes
+                    ),
+                    nn.Conv2d(
+                        self.inplanes,
+                        planes * block.expansion,
+                        kernel_size=1,
+                        bias=False,
+                    ),
+                    nn.BatchNorm2d(planes * block.expansion),
+                )
 
         layers = []
         if block is PushPullBlock:
             # layers.append(block(self.inplanes, planes * block.expansion, stride, downsample, train_alpha=train_alpha, size_lpf=size_lpf))
-            layers.append(block(self.inplanes, planes * block.expansion, stride, downsample=downsample, device="cuda" if self.use_cuda else None))
+            layers.append(
+                block(
+                    self.inplanes,
+                    planes * block.expansion,
+                    stride,
+                    downsample=downsample,
+                    device="cuda" if self.use_cuda else None,
+                    trainable_pull_inhibition=self.trainable_pull_inhibition,
+                    pull_inhibition_strength=self.pull_inhibition_strength,
+                )
+            )
         else:
-            layers.append(block(self.inplanes, planes, stride, downsample, size_lpf=size_lpf))
+            layers.append(
+                block(self.inplanes, planes, stride, downsample, size_lpf=size_lpf)
+            )
         self.inplanes = planes * block.expansion
         for i in range(1, blocks):
             if block is PushPullBlock:
                 # layers.append(block(self.inplanes, planes * block.expansion, train_alpha=train_alpha, size_lpf=size_lpf))
-                layers.append(block(self.inplanes, planes * block.expansion, device="cuda" if self.use_cuda else None))
+                layers.append(
+                    block(
+                        self.inplanes,
+                        planes * block.expansion,
+                        device="cuda" if self.use_cuda else None,
+                        trainable_pull_inhibition=self.trainable_pull_inhibition,
+                        pull_inhibition_strength=self.pull_inhibition_strength,
+                    )
+                )
             else:
-                layers.append(block(self.inplanes, planes * block.expansion, size_lpf=size_lpf))
+                layers.append(
+                    block(self.inplanes, planes * block.expansion, size_lpf=size_lpf)
+                )
 
         return nn.Sequential(*layers)
 
@@ -334,4 +458,3 @@ def resnet44(**kwargs):
 def resnet56(**kwargs):
     model = ResNetCifar(BasicBlock, [9, 9, 9], **kwargs)
     return model
-
