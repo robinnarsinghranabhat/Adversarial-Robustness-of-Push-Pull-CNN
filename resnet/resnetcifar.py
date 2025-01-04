@@ -142,7 +142,7 @@ from push_pull_v2 import PushPullConv2DUnit
 class PushPullBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=True, device=None):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, train_alpha=False, size_lpf=None, use_se=False, device=None):
         super(PushPullBlock, self).__init__()
         if stride == 1:
             self.pp1 = PushPullConv2DUnit(inplanes, planes, kernel_size=(3,3), padding=1, bias=False,

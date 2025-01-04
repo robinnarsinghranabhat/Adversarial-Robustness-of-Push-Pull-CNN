@@ -8,7 +8,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from torch.nn import functional as F
 from torch.nn.common_types import _size_2_t
 from torch.nn.modules.utils import _pair
-
+from torch import nn
 
 def surround_kernel(sigma=2):
     """
@@ -44,7 +44,8 @@ class PushPullConv2DUnit(torch.nn.Module):
             bias: bool = False,
             padding_mode: str = 'zeros',
             device=None,
-            dtype=None):
+            dtype=None,
+            use_attn=True):
 
         super(PushPullConv2DUnit, self).__init__()
 
@@ -65,6 +66,17 @@ class PushPullConv2DUnit(torch.nn.Module):
             in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride,
             padding=padding, dilation=dilation, groups=groups, bias=False, padding_mode=padding_mode, device=device,
             dtype=dtype)
+        
+        # Attention mechanism
+        self.use_attn = use_attn
+        if self.use_attn:
+            self.attention = nn.Sequential(
+                nn.AdaptiveAvgPool2d(1),
+                nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
+                nn.Sigmoid()
+            )
 
         # ss_kernel_2d = surround_kernel(sigma=2)
         # ss_kernel = np.zeros((self.out_channels, self.out_channels, *ss_kernel_2d.shape))
@@ -154,6 +166,11 @@ class PushPullConv2DUnit(torch.nn.Module):
             pull_response = self.avg(pull_response)
         push_response = F.relu_(push_response)
         pull_response = F.relu_(pull_response)
+
+        ## Apply Attention to push kernels
+        if self.use_attn:
+            attention_weights = self.attention(push_response)
+            push_response = push_response * attention_weights
 
         if not self.trainable_pull_inhibition:
             x_out = push_response - pull_response * self.pull_inhibition_strength
