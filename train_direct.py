@@ -536,7 +536,7 @@ class PPmodule2d(nn.Module):
         scale=2,
         dual_output=False,
         train_alpha=False,
-        use_attn=False,
+        use_attn=True,
     ):
         super(PPmodule2d, self).__init__()
 
