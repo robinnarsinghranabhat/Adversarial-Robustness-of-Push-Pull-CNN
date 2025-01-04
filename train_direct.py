@@ -536,7 +536,7 @@ class PPmodule2d(nn.Module):
         scale=2,
         dual_output=False,
         train_alpha=False,
-        use_attn=True,
+        use_attn=False,
     ):
         super(PPmodule2d, self).__init__()
 
@@ -942,7 +942,7 @@ class PushPullBlock(nn.Module):
         downsample=None,
         train_alpha=False,
         size_lpf=None,
-        use_se=False,
+        use_se=True,
         device=None,
         pull_inhibition_strength=1,
         trainable_pull_inhibition=False,

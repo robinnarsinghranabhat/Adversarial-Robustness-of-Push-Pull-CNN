@@ -45,7 +45,7 @@ class PushPullConv2DUnit(torch.nn.Module):
             padding_mode: str = 'zeros',
             device=None,
             dtype=None,
-            use_attn=True):
+            use_attn=False):
 
         super(PushPullConv2DUnit, self).__init__()
 

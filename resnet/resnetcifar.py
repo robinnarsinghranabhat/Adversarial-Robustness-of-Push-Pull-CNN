@@ -159,7 +159,7 @@ class PushPullBlock(nn.Module):
         downsample=None,
         train_alpha=False,
         size_lpf=None,
-        use_se=False,
+        use_se=True,
         device=None,
         pull_inhibition_strength=1,
         trainable_pull_inhibition=False,
