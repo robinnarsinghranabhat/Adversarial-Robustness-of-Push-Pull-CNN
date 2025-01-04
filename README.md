@@ -101,3 +101,9 @@ Specify parameter for : `pgd-epsilon`
 python -m test_corruption_pgd --pgd-epsilon 0.01 --pushpull --pp-all -b 2048 --arch resnet --name resnet-20-all-pp-2048-120epoc --layers 20 --corrupted-data-dir ./ --use-cuda
 ``` 
 
+## TODO : Multi-Cluster Train API
+- Training config. At different parameters
+- Run each jobs at available GPUS.
+- Jobs should create a unique-folder, train-save & run testing 
+- After job completion, retrieve folders and ids.
+- 
