@@ -384,7 +384,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=False):
+                 use_attn=True):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
