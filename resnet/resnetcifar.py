@@ -45,8 +45,8 @@ class BasicBlock(nn.Module):
                 )
 
         self.bn1 = nn.BatchNorm2d(planes)
-        # self.relu = nn.GELU()
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.GELU()
+        # self.relu = nn.ReLU(inplace=True)
         self.conv2 = conv3x3(planes, planes * self.expansion)
         self.bn2 = nn.BatchNorm2d(planes * self.expansion)
         self.downsample = downsample
@@ -94,8 +94,8 @@ class Bottleneck(nn.Module):
         self.bn2 = nn.BatchNorm2d(planes)
         self.conv3 = nn.Conv2d(planes, planes * 4, kernel_size=1, bias=False)
         self.bn3 = nn.BatchNorm2d(planes * 4)
-        # self.relu = nn.GELU()
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.GELU()
+        # self.relu = nn.ReLU(inplace=True)
         self.downsample = downsample
         self.stride = stride
 
@@ -129,7 +129,8 @@ class SEBlock(nn.Module):
         super(SEBlock, self).__init__()
         self.global_avg_pool = nn.AdaptiveAvgPool2d(1)
         self.fc1 = nn.Linear(channels, channels // reduction, bias=False)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.GELU()
+        # self.relu = nn.ReLU(inplace=True)
         self.fc2 = nn.Linear(channels // reduction, channels, bias=False)
         self.sigmoid = nn.Sigmoid()
 
@@ -159,7 +160,7 @@ class PushPullBlock(nn.Module):
         downsample=None,
         train_alpha=False,
         size_lpf=None,
-        use_se=True,
+        use_se=False,
         device=None,
         pull_inhibition_strength=1,
         trainable_pull_inhibition=False,
@@ -203,8 +204,8 @@ class PushPullBlock(nn.Module):
             #                          PPmodule2d(inplanes, planes, kernel_size=3,
             #                                     padding=1, bias=False, train_alpha=train_alpha), )
         self.bn1 = nn.BatchNorm2d(planes)
-        self.relu = nn.ReLU(inplace=True)
-        # self.relu = nn.GELU()
+        # self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.GELU()
         self.pp2 = PushPullConv2DUnit(
             planes,
             planes,
@@ -306,8 +307,8 @@ class ResNetCifar(nn.Module):
             )
 
         self.bn1 = nn.BatchNorm2d(16)
-        self.relu = nn.ReLU(inplace=True)
-        # self.relu = nn.GELU()
+        # self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.GELU()
 
         if pp_all:
             # Use push-pull inhibition at all layers

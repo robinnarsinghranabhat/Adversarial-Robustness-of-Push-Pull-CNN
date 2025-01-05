@@ -45,7 +45,7 @@ class PushPullConv2DUnit(torch.nn.Module):
             padding_mode: str = 'zeros',
             device=None,
             dtype=None,
-            use_attn=False):
+            use_attn=True):
 
         super(PushPullConv2DUnit, self).__init__()
 
@@ -73,7 +73,8 @@ class PushPullConv2DUnit(torch.nn.Module):
             self.attention = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
                 nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
-                nn.ReLU(inplace=True),
+                nn.GELU(),
+                # nn.ReLU(inplace=True),
                 nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
                 nn.Sigmoid()
             )
