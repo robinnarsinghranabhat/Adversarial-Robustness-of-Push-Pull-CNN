@@ -125,8 +125,8 @@ class PPmodule2d(nn.Module):
         self.up_sampler = nn.Upsample(size=(pull_size, pull_size),
                                       mode='bilinear',
                                       align_corners=True)
-        # self.relu = nn.GELU()
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.GELU()
+        # self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
         # with torch.no_grad():
