@@ -631,11 +631,20 @@ class Downsample1D(nn.Module):
             return F.conv1d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
 
 
-def conv3x3(in_planes, out_planes, stride=1):
-    """3x3 convolution with padding"""
-    return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
-                     padding=1, bias=False)
+# def conv3x3(in_planes, out_planes, stride=1):
+#     """3x3 convolution with padding"""
+#     return nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
+#                      padding=1, bias=False)
 
+def conv3x3(in_planes, out_planes, stride=1):
+    """3x3 depthwise convolution followed by 1x1 pointwise convolution"""
+    return nn.Sequential(
+        # Depthwise convolution
+        nn.Conv2d(in_planes, in_planes, kernel_size=3, stride=stride, padding=1, 
+                  groups=in_planes, bias=False),
+        # Pointwise convolution
+        nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=1, padding=0, bias=False)
+    )
 
 class BasicBlock(nn.Module):
     expansion = args.expansion
