@@ -384,7 +384,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=True):
+                 use_attn=False):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -396,7 +396,29 @@ class PPmodule2d(nn.Module):
             out_channels = out_channels // 2
 
         # Push kernels (is the one for which the weights are learned - the pull kernel is derived from it)
-        self.push = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias=bias)
+        # self.push = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias=bias)
+        self.push = nn.Sequential(
+            # Depthwise Convolution
+            nn.Conv2d(
+                in_channels=in_channels, 
+                out_channels=in_channels,  # Number of filters = number of input channels
+                kernel_size=kernel_size, 
+                stride=stride, 
+                padding=padding, 
+                dilation=dilation, 
+                groups=in_channels,  # Groups = in_channels for depthwise convolution
+                bias=bias
+            ),
+            # Pointwise Convolution
+            nn.Conv2d(
+                in_channels=in_channels, 
+                out_channels=out_channels,  # Desired number of output channels
+                kernel_size=1, 
+                stride=1, 
+                padding=0, 
+                bias=bias
+            )
+        )
 
 
         """
@@ -436,7 +458,7 @@ class PPmodule2d(nn.Module):
             self.alpha.data.uniform_(.5-r, .5+r)  # math.sqrt(n) / 2)  # (-stdv, stdv)
 
         self.scale_factor = scale
-        push_size = self.push.weight[0].size()[1]
+        push_size = self.push[0].weight[0].size()[1]
 
         # compute the size of the pull kernel
         if self.scale_factor == 1:
@@ -459,20 +481,29 @@ class PPmodule2d(nn.Module):
         if self.scale_factor == 1:
             pull_weights = self.push.weight
         else:
-            pull_weights = self.up_sampler(self.push.weight)
+            # pull_weights = self.up_sampler(self.push.weight)
+            pull_weights = self.up_sampler(self.push[0].weight)
+            pull_weights_pointwise = self.push[1].weight
         # pull_weights.requires_grad = False
 
-        bias = self.push.bias
-        if self.push.bias is not None:
-            bias = -self.push.bias
+        bias = self.push[0].bias
+        if self.push[0].bias is not None:
+            bias = -self.push[0].bias
 
         push = self.relu(self.push(x))
-        pull = self.relu(F.conv2d(x,
-                                  -pull_weights,
-                                  bias,
-                                  self.push.stride,
-                                  self.pull_padding, self.push.dilation,
-                                  self.push.groups))
+        pull = F.conv2d(x,
+                        -pull_weights,
+                        bias,
+                        self.push[0].stride,
+                        self.pull_padding, self.push[0].dilation,
+                        self.push[0].groups)
+        pull = F.relu(F.conv2d(pull, 
+                        pull_weights_pointwise, 
+                        bias,
+                        self.push[1].stride,
+                        self.push[1].padding, self.push[1].dilation,
+                        self.push[1].groups
+                    ))
         
         ## Apply Attention to push kernels
         if self.use_attn:
