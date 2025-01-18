@@ -151,13 +151,14 @@ class DenseNetCifar(nn.Module):
         efficient (bool) - set to True to use checkpointing. Much more memory efficient, but slower.
         use_pp1 (bool) - use a push-pull layer instead of the first convolutional layer
         pp_block1 (bool) - use a push-pull layer instead of all convolutions in the first dense block
+        pp_all (bool) - use pp-layer in all dense blocks
         train_alpha (bool) - if ''True'', the inhibition strength parameter alpha is trained (default: ''False'')
     """
     def __init__(self, growth_rate=12, layers=40, compression=0.5,
                  num_init_features=24, bn_size=4, drop_rate=0,
                  num_classes=10, small_inputs=True, efficient=False,
                  use_pp1=False, pp_block1=False, train_alpha=False,
-                 alpha_pp=1, scale_pp=2):
+                 pp_all=False, alpha_pp=1, scale_pp=2):
 
         super(DenseNetCifar, self).__init__()
         assert 0 < compression <= 1, 'compression of densenet should be between 0 and 1'
@@ -197,7 +198,8 @@ class DenseNetCifar(nn.Module):
         # Each denseblock
         num_features = num_init_features
         for i, num_layers in enumerate(block_config):
-            if i == 0 and pp_block1:
+            # if pp_block1 and i == 0:
+            if pp_all:
                 block = _DensePushPullBlock(
                     num_layers=num_layers,
                     num_input_features=num_features,

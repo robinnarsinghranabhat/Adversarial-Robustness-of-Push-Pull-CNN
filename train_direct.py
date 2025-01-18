@@ -945,16 +945,33 @@ def main():
 
     # --------------------------------------------------------------------------------
     # create model
-    output_dir = experiment_dir + 'resnet-cifar/'
+    if args.arch == 'densenet':
+        output_dir = experiment_dir + 'densenet-cifar/'
+        rnargs = {'use_pp1': args.pushpull,
+                  'pp_block1': args.pp_block1,
+                  'pp_all': args.pp_all,
+                  'num_classes': nclasses,
+                  'small_inputs': True,
+                  'efficient': args.efficient,
+                  'compression': args.reduce,
+                  'drop_rate': args.droprate,
+                  # 'scale_pp': args.scale_pp,
+                  # 'alpha_pp': args.alpha_pp
+                  }
+        from densenet.densenetcifar import DenseNetCifar
+        model = DenseNetCifar(layers=40, growth_rate=12, **rnargs)
+    else:
+        output_dir = experiment_dir + 'resnet-cifar/'
 
-    rnargs = {'use_pp1': args.pushpull,
-                'pp_block1': args.pp_block1,
-                'pp_all': args.pp_all,
-                'train_alpha': args.train_alpha,
-                'size_lpf': args.lpf_size,
-                'layer_expansions' :  args.layer_expansions}
-    
-    model = ResNetCifar(BasicBlock, args.layer_sizes, **rnargs)
+        rnargs = {'use_pp1': args.pushpull,
+                    'pp_block1': args.pp_block1,
+                    'pp_all': args.pp_all,
+                    'train_alpha': args.train_alpha,
+                    'size_lpf': args.lpf_size,
+                    'layer_expansions' :  args.layer_expansions}
+        
+        model = ResNetCifar(BasicBlock, args.layer_sizes, **rnargs)
+    print(f"Using : {args.arch}")
     print('Number of model parameters: {}'.format(sum([p.data.nelement() for p in model.parameters()])))
     logger = None
     if args.tensorboard:
