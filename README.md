@@ -101,3 +101,15 @@ Specify parameter for : `pgd-epsilon`
 python -m test_corruption_pgd --pgd-epsilon 0.01 --pushpull --pp-all -b 2048 --arch resnet --name resnet-20-all-pp-2048-120epoc --layers 20 --corrupted-data-dir ./ --use-cuda
 ``` 
 
+
+## Densenet
+
+train
+```
+python -m train_direct -b 2048 --arch densenet --name densenet-base-all-pp-attn-2048-120epoc --pushpull --layers 40 --print-freq 4 --epochs 120 --use-cuda --pp-all
+```
+
+test
+```
+python -m test_corruption -b 2048 --arch densenet --name densenet-base-all-pp-attn-2048-120epoc --pushpull --layers 40 --print-freq 4 --use-cuda --pp-all ## --fgsm-epsilon 0.01 
+```

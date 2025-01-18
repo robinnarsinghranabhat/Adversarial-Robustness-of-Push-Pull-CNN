@@ -125,16 +125,17 @@ def main():
         elif args.layers == 56:
             model = resnet56(**rnargs)
     elif args.arch == 'densenet':
-        expdir = 'models/densenet-cifar/'
+        expdir = 'experiments/densenet-cifar/'
         rnargs = {'use_pp1': args.pushpull,
                   'pp_block1': args.pp_block1,
+                  'pp_all': args.pp_all,
                   'num_classes': nclasses,
                   'small_inputs': True,
                   'efficient': args.efficient,
                   'compression': args.reduce,
                   'drop_rate': args.droprate,
-                  'scale_pp': args.scale_pp,
-                  'alpha_pp': args.alpha_pp
+                #   'scale_pp': args.scale_pp,
+                #   'alpha_pp': args.alpha_pp
                   }
 
         if args.layers == 40:
