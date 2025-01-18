@@ -198,8 +198,8 @@ class DenseNetCifar(nn.Module):
         # Each denseblock
         num_features = num_init_features
         for i, num_layers in enumerate(block_config):
-            # if pp_block1 and i == 0:
-            if pp_all:
+            if pp_block1 and i == 0:
+            # if pp_all:
                 block = _DensePushPullBlock(
                     num_layers=num_layers,
                     num_input_features=num_features,
