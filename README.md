@@ -113,3 +113,6 @@ test
 ```
 python -m test_corruption -b 2048 --arch densenet --name densenet-base-all-pp-attn-2048-120epoc --pushpull --layers 40 --print-freq 4 --use-cuda --pp-all ## --fgsm-epsilon 0.01 
 ```
+
+
+python -m train_direct -b 2048 --arch densenet --name densenet-base-all-pp-relu-baseline-2048-120epoc --pushpull --layers 40 --print-freq 4 --epochs 120 --use-cuda --pp-all
