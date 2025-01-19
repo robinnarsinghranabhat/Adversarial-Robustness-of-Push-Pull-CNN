@@ -419,12 +419,9 @@ class PPmodule2d(nn.Module):
         if self.use_attn:
             self.attention = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
-                nn.Flatten(start_dim=1),
-                # nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
-                nn.Linear(out_channels, out_channels // 4, bias=True),
+                nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
                 nn.ReLU(inplace=True),
-                # nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
-                nn.Linear(out_channels // 4, out_channels, bias=True),
+                nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
                 nn.Sigmoid()
             )
         # Configuration of the Push-Pull inhibition
@@ -481,9 +478,7 @@ class PPmodule2d(nn.Module):
         ## Emphasize which channels to surpress more
         if self.use_attn:
             attention_weights = self.attention(pull)
-            attention_weights = attention_weights.view( ( -1, attention_weights.shape[-1], 1, 1 ))
             pull = pull * attention_weights
-            # push = push * attention_weights
         alpha = self.alpha
         if self.train_alpha:
             # alpha is greater or equal than 0
