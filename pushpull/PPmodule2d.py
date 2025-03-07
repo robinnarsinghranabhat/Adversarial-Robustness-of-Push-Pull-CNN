@@ -35,64 +35,46 @@ class PPmodule2d(nn.Module):
     """
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=False,
-                 alpha=1, scales=[1.5, 2, 3], dual_output=False,
+                 alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
                  use_attn=True):
         super(PPmodule2d, self).__init__()
 
-        # self.dual_output = dual_output
-        self.train_alpha = train_alpha
+        # Lower-Dimensional Feature Extraction
+        latent_dim = 32
 
-        # Note: the dual output is not tested yet
-        # if self.dual_output:
-        #     assert (out_channels % 2 == 0)
-        #     out_channels = out_channels // 2
+        self.feature_extractor = nn.Conv2d(in_channels, latent_dim, kernel_size=1)  # 1x1 conv
+        
+        # Autoencoder
+        self.encoder = nn.Sequential(
+            nn.Conv2d(latent_dim, latent_dim // 2, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.Conv2d(latent_dim // 2, latent_dim // 4, kernel_size=3, padding=1),
+            nn.ReLU()
+        )
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(latent_dim // 4, latent_dim // 2, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.ConvTranspose2d(latent_dim // 2, latent_dim, kernel_size=3, padding=1),
+            nn.Sigmoid()
+        )
+        
+        # Gate Network
+        self.gate_net = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),  # Global average pooling
+            nn.Flatten(),
+            nn.Linear(latent_dim, latent_dim),  # Fully connected layer
+            nn.ReLU(),
+            nn.Linear(latent_dim, out_channels),  # Predict gate output per channel
+            nn.Sigmoid()  # Ensure output is between 0 and 1
+        )
+                
+        self.train_alpha = train_alpha
 
         # Push kernels (is the one for which the weights are learned - the pull kernel is derived from it)
         self.push = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias=bias)
+        self.sharpen = self._create_sharpen(scale) 
 
-        self.scales = scales
-        self.sharpens = nn.ModuleList([
-            self._create_sharpen(scale) for scale in scales
-        ])
-
-        concat_output_channels = out_channels * (1 + len(scales))
-
-        """
-        # Bias: push and pull convolutions will have bias=0.
-        # If the PP kernel has bias, it is computed next to the combination of the 2 convolutions
-        if bias:
-            self.bias = nn.Parameter(torch.Tensor(out_channels))
-            # Inizialize bias
-            n = in_channels
-            for k in self.push.kernel_size:
-                n *= k
-            stdv = 1. / math.sqrt(n)
-            self.bias.data.uniform_(-stdv, stdv)
-        else:
-            self.register_parameter('bias', None)
-        """
-
-        # Attention mechanism
-        self.use_attn = use_attn
-        if self.use_attn:
-            self.attention = nn.Sequential(
-                nn.AdaptiveAvgPool2d(1),
-                nn.Flatten(start_dim=1),
-                # nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
-                nn.Linear(concat_output_channels, concat_output_channels // 4, bias=True),
-                nn.ReLU(inplace=True),
-                # nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
-                nn.Linear(concat_output_channels // 4, concat_output_channels, bias=True),
-                nn.Sigmoid()
-            )
-
-        # Channel reducer (1x1 convolution)
-        self.channel_reducer = nn.Conv2d(
-            in_channels=concat_output_channels,
-            out_channels=out_channels,
-            kernel_size=1
-        )
 
         # Configuration of the Push-Pull inhibition
         if not self.train_alpha:
@@ -105,69 +87,28 @@ class PPmodule2d(nn.Module):
             r = 1. / math.sqrt(in_channels * out_channels)
             self.alpha.data.uniform_(.5-r, .5+r)  # math.sqrt(n) / 2)  # (-stdv, stdv)
 
-        # self.scale_factor = scale
-        # push_size = self.push.weight[0].size()[1]
 
-        # # compute the size of the pull kernel
-        # if self.scale_factor == 1:
-        #     pull_size = push_size
-        # else:
-        #     pull_size = math.floor(push_size * self.scale_factor)
-        #     if pull_size % 2 == 0:
-        #         pull_size += 1
-        # # upsample the pull kernel from the push kernel
-        # self.pull_padding = pull_size // 2 - push_size // 2 + padding
-        # self.up_sampler = nn.Upsample(size=(pull_size, pull_size),
-        #                               mode='bilinear',
-        #                               align_corners=True)
-        self.relu = nn.GELU()
-        # self.relu = nn.ReLU(inplace=True)
-
-    def forward(self, x):
-        # with torch.no_grad():
-        # if self.scale_factor == 1:
-        #     pull_weights = self.push.weight
-        # else:
-        #     pull_weights = self.up_sampler(self.push.weight)
-        # pull_weights.requires_grad = False
-
-        # bias = self.push.bias
-        # if self.push.bias is not None:
-        #     bias = -self.push.bias
-
-        ## USE GELU on push activations ... 
-        # push = self.relu(self.push(x))
-
-        ## Removing Relu. to avoid information loss ! 
-        push = self.push(x)
-        # pull = self.relu(F.conv2d(x,
-        #                           -pull_weights,
-        #                           bias,
-        #                           self.push.stride,
-        #                           self.pull_padding, self.push.dilation,
-        #                           self.push.groups))
         
-        sharpen_activations = [ push - self.alpha * sharpen(x) for sharpen in self.sharpens]
-
-        concat_features = torch.cat([push] + sharpen_activations, dim=1)
-
-        ## Apply Attention to push kernels
-        if self.use_attn:
-            attention_weights = self.attention(concat_features)
-            attention_weights = attention_weights.view( ( -1, attention_weights.shape[-1], 1, 1 ))
-            concat_features = concat_features * attention_weights
-
-        output = self.channel_reducer(concat_features)
-        # alpha = self.alpha
-        # if self.train_alpha:
-            # alpha is greater or equal than 0
-            # alpha = self.relu(self.alpha)
-
-        # if self.dual_output:
-        #     x = torch.cat([push, pull], dim=1)
-        # else:
-        #     x = push - alpha * pull
-            # + self.bias.reshape(1, self.push.out_channels, 1, 1) #.repeat(s[0], 1, s[2], s[3])
+    def forward(self, x):
+        # Encode and Reconstruct
+        features = self.feature_extractor(x)  
+ 
+         # Autoencoder
+        encoded = self.encoder(features)
+        reconstructed = self.decoder(encoded)
+        error_map = torch.abs(features - reconstructed)  # Reconstruction error
+        
+        
+        # Gate Output
+        gate_output = self.gate_net(error_map)  # [B, out_channels]
+        gate_output = gate_output.unsqueeze(-1).unsqueeze(-1)  # Reshape to [B, out_channels, 1, 1]
+        
+        # Main and Sharpen Activations
+        main_activation = self.push(x)
+        sharpen_activation = self.sharpen(x)
+        
+        # Final Output
+        output = main_activation - gate_output * sharpen_activation
         return output
 
     def _create_sharpen(self, scale):
