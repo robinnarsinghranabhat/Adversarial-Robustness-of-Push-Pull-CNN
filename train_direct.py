@@ -387,14 +387,31 @@ class PPmodule2d(nn.Module):
                  use_attn=True):
         super(PPmodule2d, self).__init__()
 
+        self.encoder = nn.Sequential(
+            nn.Conv2d(in_channels, 64, kernel_size, padding=kernel_size//2),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, kernel_size, padding=kernel_size//2),
+            nn.BatchNorm2d(128),
+            nn.ReLU()
+        )
         
-        # self.dual_output = dual_output
-        self.train_alpha = train_alpha
+        # Latent Reconstruction Adapter (Decoder)
+        self.decoder = nn.Sequential(
+            nn.ConvTranspose2d(128, 64, kernel_size, padding=kernel_size//2),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            nn.ConvTranspose2d(64, in_channels, kernel_size, padding=kernel_size//2),
+            nn.Sigmoid()
+        )
 
-        # Note: the dual output is not tested yet
-        # if self.dual_output:
-        #     assert (out_channels % 2 == 0)
-        #     out_channels = out_channels // 2
+        self.gate = nn.Sequential(
+            nn.Conv2d(in_channels, 1, 1),  # Reduce error map channels
+            nn.Sigmoid()
+        )
+        
+
+        self.train_alpha = train_alpha
 
         # Push kernels (is the one for which the weights are learned - the pull kernel is derived from it)
         self.push = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias=bias)
@@ -470,8 +487,19 @@ class PPmodule2d(nn.Module):
         #                               align_corners=True)
         self.relu = nn.GELU()
         # self.relu = nn.ReLU(inplace=True)
+        # Gating Network (Processes error map → attention weights)
+        
 
     def forward(self, x):
+
+        encoded = self.encoder(x)
+        reconstructed = self.decoder(encoded)
+        error_map = torch.abs(x - reconstructed)  # [B, C, H, W]
+
+
+        # Attention Weights from Error Map
+        attention = self.gate(error_map)  # [B, 1, H, W]
+
         # with torch.no_grad():
         # if self.scale_factor == 1:
         #     pull_weights = self.push.weight
