@@ -387,14 +387,9 @@ class PPmodule2d(nn.Module):
                  use_attn=True):
         super(PPmodule2d, self).__init__()
 
-        
         # self.dual_output = dual_output
         self.train_alpha = train_alpha
 
-        # Note: the dual output is not tested yet
-        # if self.dual_output:
-        #     assert (out_channels % 2 == 0)
-        #     out_channels = out_channels // 2
 
         # Push kernels (is the one for which the weights are learned - the pull kernel is derived from it)
         self.push = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias=bias)
@@ -404,22 +399,6 @@ class PPmodule2d(nn.Module):
             self._create_sharpen(scale) for scale in scales
         ])
 
-        concat_output_channels = out_channels * (1 + len(scales))
-
-        """
-        # Bias: push and pull convolutions will have bias=0.
-        # If the PP kernel has bias, it is computed next to the combination of the 2 convolutions
-        if bias:
-            self.bias = nn.Parameter(torch.Tensor(out_channels))
-            # Inizialize bias
-            n = in_channels
-            for k in self.push.kernel_size:
-                n *= k
-            stdv = 1. / math.sqrt(n)
-            self.bias.data.uniform_(-stdv, stdv)
-        else:
-            self.register_parameter('bias', None)
-        """
 
         # Attention mechanism
         self.use_attn = use_attn
@@ -427,20 +406,13 @@ class PPmodule2d(nn.Module):
             self.attention = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
                 # nn.Flatten(start_dim=1),
-                nn.Conv2d(concat_output_channels, concat_output_channels // 4, kernel_size=1, bias=True),
-                # nn.Linear(concat_output_channels, concat_output_channels // 4, bias=True),
+                nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
+                # nn.Linear(out_channels, out_channels // 4, bias=True),
                 nn.GELU(),
-                nn.Conv2d(concat_output_channels // 4, concat_output_channels, kernel_size=1, bias=True),
-                # nn.Linear(concat_output_channels // 4, concat_output_channels, bias=True),
+                nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
+                # nn.Linear(concat_out_channels // 4, concat_out_channels, bias=True),
                 nn.Sigmoid()
             )
-
-        # Channel reducer (1x1 convolution)
-        self.channel_reducer = nn.Conv2d(
-            in_channels=concat_output_channels,
-            out_channels=out_channels,
-            kernel_size=1
-        )
 
         # Configuration of the Push-Pull inhibition
         if not self.train_alpha:
@@ -453,70 +425,23 @@ class PPmodule2d(nn.Module):
             r = 1. / math.sqrt(in_channels * out_channels)
             self.alpha.data.uniform_(.5-r, .5+r)  # math.sqrt(n) / 2)  # (-stdv, stdv)
 
-        # self.scale_factor = scale
-        # push_size = self.push.weight[0].size()[1]
-
-        # # compute the size of the pull kernel
-        # if self.scale_factor == 1:
-        #     pull_size = push_size
-        # else:
-        #     pull_size = math.floor(push_size * self.scale_factor)
-        #     if pull_size % 2 == 0:
-        #         pull_size += 1
-        # # upsample the pull kernel from the push kernel
-        # self.pull_padding = pull_size // 2 - push_size // 2 + padding
-        # self.up_sampler = nn.Upsample(size=(pull_size, pull_size),
-        #                               mode='bilinear',
-        #                               align_corners=True)
         self.relu = nn.GELU()
         # self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        # with torch.no_grad():
-        # if self.scale_factor == 1:
-        #     pull_weights = self.push.weight
-        # else:
-        #     pull_weights = self.up_sampler(self.push.weight)
-        # pull_weights.requires_grad = False
-
-        # bias = self.push.bias
-        # if self.push.bias is not None:
-        #     bias = -self.push.bias
-
-        ## USE GELU on push activations ... 
-        # push = self.relu(self.push(x))
 
         ## Removing Relu. to avoid information loss ! 
         push = self.push(x)
-        # pull = self.relu(F.conv2d(x,
-        #                           -pull_weights,
-        #                           bias,
-        #                           self.push.stride,
-        #                           self.pull_padding, self.push.dilation,
-        #                           self.push.groups))
-        
-        sharpen_activations = [ push - self.alpha * sharpen(x) for sharpen in self.sharpens]
 
-        concat_features = torch.cat([push] + sharpen_activations, dim=1)
+        for sharpen in self.sharpens:
+            push -= self.alpha * sharpen(x) 
 
         ## Apply Attention to push kernels
         if self.use_attn:
-            attention_weights = self.attention(concat_features)
-            # attention_weights = attention_weights.view( ( -1, attention_weights.shape[-1], 1, 1 ))
-            concat_features = concat_features * attention_weights
+            attention_weights = self.attention(push)
+            push = push * attention_weights
 
-        output = self.channel_reducer(concat_features)
-        # alpha = self.alpha
-        # if self.train_alpha:
-            # alpha is greater or equal than 0
-            # alpha = self.relu(self.alpha)
-
-        # if self.dual_output:
-        #     x = torch.cat([push, pull], dim=1)
-        # else:
-        #     x = push - alpha * pull
-            # + self.bias.reshape(1, self.push.out_channels, 1, 1) #.repeat(s[0], 1, s[2], s[3])
-        return output
+        return push
 
     def _create_sharpen(self, scale):
         """
@@ -569,7 +494,6 @@ class PPmodule2d(nn.Module):
                 return sharpen_activations
 
         return SharpenLayer(self.push, scale)
-
 
 class Downsample(nn.Module):
     def __init__(self, pad_type='reflect', filt_size=3, stride=2, channels=None, pad_off=0):
