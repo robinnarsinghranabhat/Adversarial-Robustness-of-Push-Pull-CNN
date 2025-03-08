@@ -35,7 +35,7 @@ class PPmodule2d(nn.Module):
     """
     def __init__(self, in_channels, out_channels, kernel_size, stride=1,
                  padding=0, dilation=1, groups=1, bias=False,
-                 alpha=1, scales=[1.5, 2, 3], dual_output=False,
+                 alpha=1, scales=[2, 3], dual_output=False,
                  train_alpha=False,
                  use_attn=True):
         super(PPmodule2d, self).__init__()
