@@ -426,12 +426,12 @@ class PPmodule2d(nn.Module):
         if self.use_attn:
             self.attention = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
-                nn.Flatten(start_dim=1),
-                # nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
-                nn.Linear(concat_output_channels, concat_output_channels // 4, bias=True),
-                nn.ReLU(inplace=True),
-                # nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
-                nn.Linear(concat_output_channels // 4, concat_output_channels, bias=True),
+                # nn.Flatten(start_dim=1),
+                nn.Conv2d(concat_output_channels, concat_output_channels // 4, kernel_size=1, bias=True),
+                # nn.Linear(concat_output_channels, concat_output_channels // 4, bias=True),
+                nn.GELU(),
+                nn.Conv2d(concat_output_channels // 4, concat_output_channels, kernel_size=1, bias=True),
+                # nn.Linear(concat_output_channels // 4, concat_output_channels, bias=True),
                 nn.Sigmoid()
             )
 
@@ -502,7 +502,7 @@ class PPmodule2d(nn.Module):
         ## Apply Attention to push kernels
         if self.use_attn:
             attention_weights = self.attention(concat_features)
-            attention_weights = attention_weights.view( ( -1, attention_weights.shape[-1], 1, 1 ))
+            # attention_weights = attention_weights.view( ( -1, attention_weights.shape[-1], 1, 1 ))
             concat_features = concat_features * attention_weights
 
         output = self.channel_reducer(concat_features)
