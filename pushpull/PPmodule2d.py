@@ -37,13 +37,10 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scales=[1.5, 2, 3], dual_output=False,
                  train_alpha=False,
-                 use_attn=False):
+                 use_attn=True):
         super(PPmodule2d, self).__init__()
 
-
-
         self.train_alpha = train_alpha
-
 
         # Push kernels (is the one for which the weights are learned - the pull kernel is derived from it)
         self.push = nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding, dilation, groups, bias=bias)
@@ -62,20 +59,22 @@ class PPmodule2d(nn.Module):
             self.attention = nn.Sequential(
                 nn.AdaptiveAvgPool2d(1),
                 # nn.Flatten(start_dim=1),
-                nn.Conv2d(concat_output_channels, concat_output_channels // 4, kernel_size=1, bias=True),
+                nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
                 # nn.Linear(concat_output_channels, concat_output_channels // 4, bias=True),
                 nn.GELU(),
-                nn.Conv2d(concat_output_channels // 4, concat_output_channels, kernel_size=1, bias=True),
+                nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
                 # nn.Linear(concat_output_channels // 4, concat_output_channels, bias=True),
                 nn.Sigmoid()
             )
 
         # Channel reducer (1x1 convolution)
         self.channel_reducer = nn.Conv2d(
-            in_channels=concat_output_channels,
+            in_channels=concat_output_channels,  # 4 channels per group (p, p1, p2, p3)
             out_channels=out_channels,
-            kernel_size=1
+            kernel_size=1,
+            groups=out_channels
         )
+
 
         # Configuration of the Push-Pull inhibition
         if not self.train_alpha:
@@ -94,18 +93,21 @@ class PPmodule2d(nn.Module):
     def forward(self, x):
 
         ## Removing Relu. to avoid information loss ! 
-        push = self.push(x)
-        
+        push = self.push(x)        
         sharpen_activations = [ sharpen(x) for sharpen in self.sharpens]
 
-        concat_features = torch.cat([push] + sharpen_activations, dim=1)
-
+        stacked = torch.stack([push] + sharpen_activations, dim=2)  # shape: (B, C, 4, H, W)
+    
+        # Reshape to interleave channels: [p[0], p1[0], p2[0], p3[0], p[1], p1[1], ...]
+        concat_features = stacked.flatten(start_dim=1, end_dim=2)  # shape: (B, C*4, H, W) = (B, 64, 32, 32)
+        
+        output = self.channel_reducer(concat_features)  # shape: (B, 16, 32, 32)
         ## Apply Attention to push kernels
         if self.use_attn:
-            attention_weights = self.attention(concat_features)
-            concat_features = concat_features * attention_weights
+            attention_weights = self.attention(output)
+            output = attention_weights * output
 
-        output = self.channel_reducer(concat_features)
+        # output = self.channel_reducer(concat_features)
         return output
 
     def _create_sharpen(self, scale):
