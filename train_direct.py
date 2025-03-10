@@ -348,6 +348,28 @@ experiment_dir = 'experiments/'
 Model Setup : 
 ResNet-20 with Push-Pull: implemented on top of the official PyTorch ResNet implementation
 """
+# SImAM Attention Module
+class simam_module(nn.Module):
+    def __init__(self, channels=None, e_lambda=1e-4):
+        super(simam_module, self).__init__()
+        self.activation = nn.Sigmoid()
+        self.e_lambda = e_lambda
+
+    def __repr__(self):
+        s = self.__class__.__name__ + '('
+        s += ('lambda=%f)' % self.e_lambda)
+        return s
+
+    @staticmethod
+    def get_module_name():
+        return "simam"
+
+    def forward(self, x):
+        b, c, h, w = x.size()
+        n = w * h - 1
+        x_minus_mu_square = (x - x.mean(dim=[2, 3], keepdim=True)).pow(2)
+        y = x_minus_mu_square / (4 * (x_minus_mu_square.sum(dim=[2, 3], keepdim=True) / n + self.e_lambda)) + 0.5
+        return x * self.activation(y)
 
 class PPmodule2d(nn.Module):
     """
@@ -412,13 +434,9 @@ class PPmodule2d(nn.Module):
         """
 
         # Attention mechanism
-        self.attention = nn.Sequential(
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(out_channels, out_channels // 4, kernel_size=1, bias=True),
-            nn.GELU(),
-            nn.Conv2d(out_channels // 4, out_channels, kernel_size=1, bias=True),
-            nn.Sigmoid()
-        )
+        simam_e_lambda=1e-4
+        self.attention = simam_module(channels=out_channels, e_lambda=simam_e_lambda)
+
         # Configuration of the Push-Pull inhibition
         if not self.train_alpha:
             # when alpha is an hyper-parameter (as in [1])
@@ -469,8 +487,7 @@ class PPmodule2d(nn.Module):
                         self.push.groups)
         
         ## Apply Attention to push kernels
-        attention_weights = self.attention(push)
-        push = push * attention_weights
+        push = self.attention(push)
 
         alpha = self.alpha
         if self.train_alpha:
