@@ -37,7 +37,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scales=[1.5, 2, 3], dual_output=False,
                  train_alpha=False,
-                 use_attn=True):
+                 use_attn=False):
         super(PPmodule2d, self).__init__()
 
         self.train_alpha = train_alpha
