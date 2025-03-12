@@ -118,13 +118,13 @@ class PPmodule2d(nn.Module):
         if self.push.bias is not None:
             bias = -self.push.bias
 
-        push = self.relu(self.push(x))
-        pull = self.relu(F.conv2d(x,
-                                  -pull_weights,
-                                  bias,
-                                  self.push.stride,
-                                  self.pull_padding, self.push.dilation,
-                                  self.push.groups))
+        push = self.push(x)
+        pull = F.conv2d(x,
+                        -pull_weights,
+                        bias,
+                        self.push.stride,
+                        self.pull_padding, self.push.dilation,
+                        self.push.groups)
         
         ## Apply Attention to push kernels
         if self.use_attn:
