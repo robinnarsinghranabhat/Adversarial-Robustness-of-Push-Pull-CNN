@@ -182,7 +182,7 @@ class DenseNetCifar(nn.Module):
             else:  # Use push-pull layer
                 self.features = nn.Sequential(OrderedDict([
                     ('conv0', PPmodule2d(3, num_init_features, kernel_size=3, stride=1, padding=1,
-                                         train_alpha=train_alpha, bias=False, alpha=alpha_pp, scale=scale_pp)),
+                                         train_alpha=train_alpha, bias=False, alpha=alpha_pp)), # removed scale
                 ]))
         else:  # ImageNet (generally, bigger-input images)
             if not use_pp1:
@@ -192,7 +192,7 @@ class DenseNetCifar(nn.Module):
             else:  # Use push-pull layer
                 self.features = nn.Sequential(OrderedDict([
                     ('conv0', PPmodule2d(3, num_init_features, kernel_size=7, stride=2, padding=3,
-                                         train_alpha=train_alpha, bias=False, alpha=alpha_pp, scale=scale_pp)),
+                                         train_alpha=train_alpha, bias=False, alpha=alpha_pp)), # remove scale=scale_pp
                 ]))
 
             self.features.add_module('norm0', nn.BatchNorm2d(num_init_features))
