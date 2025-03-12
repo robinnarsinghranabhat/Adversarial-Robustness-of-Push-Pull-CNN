@@ -384,7 +384,7 @@ class PPmodule2d(nn.Module):
                  padding=0, dilation=1, groups=1, bias=False,
                  alpha=1, scale=2, dual_output=False,
                  train_alpha=False,
-                 use_attn=False):
+                 use_attn=True):
         super(PPmodule2d, self).__init__()
 
         self.dual_output = dual_output
@@ -466,13 +466,13 @@ class PPmodule2d(nn.Module):
         if self.push.bias is not None:
             bias = -self.push.bias
 
-        push = self.relu(self.push(x))
-        pull = self.relu(F.conv2d(x,
+        push = self.push(x)
+        pull = F.conv2d(x,
                                   -pull_weights,
                                   bias,
                                   self.push.stride,
                                   self.pull_padding, self.push.dilation,
-                                  self.push.groups))
+                                  self.push.groups)
         
         ## Apply Attention to push kernels
         if self.use_attn:
