@@ -132,6 +132,7 @@ class PPmodule2d(nn.Module):
         if self.push.bias is not None:
             bias = -self.push.bias
 
+        x = self.attention(x)
         push = self.push(x)
         pull = F.conv2d(x,
                                   -pull_weights,
@@ -141,7 +142,7 @@ class PPmodule2d(nn.Module):
                                   self.push.groups)
 
         ## Apply Attention to push kernels
-        push = self.attention(push)
+        # push = self.attention(push)
 
         alpha = self.alpha
         if self.train_alpha:
