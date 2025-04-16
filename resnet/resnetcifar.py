@@ -1,4 +1,6 @@
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import math
 from utils.downsample import Downsample
 from pushpull.PPmodule2d import PPmodule2d
@@ -163,6 +165,39 @@ class PushPullBlock(nn.Module):
         return out
 
 
+class SupConLoss(nn.Module):
+    def __init__(self, temperature=0.07):
+        super().__init__()
+        self.temperature = temperature
+
+    def forward(self, features, labels):
+        """
+        features: [N, D] (already flattened)
+        labels:   [N]
+        """
+        # 1) normalize
+        features = F.normalize(features, dim=1)
+
+        # 2) cosine similarity matrix [N, N]
+        sim = torch.matmul(features, features.T) / self.temperature
+
+        # 3) mask for positives
+        labels = labels.unsqueeze(1)
+        mask_pos = torch.eq(labels, labels.T).float()
+        # remove self-comparisons
+        mask_pos.fill_diagonal_(0)
+
+        # 4) for each i, compute log_prob over all j != i
+        exp_sim = torch.exp(sim) * (1 - torch.eye(len(features), device=features.device))
+        log_prob = sim - torch.log(exp_sim.sum(dim=1, keepdim=True) + 1e-12)
+
+        # 5) sum over positives
+        numerator = (mask_pos * log_prob).sum(dim=1)
+        denom = mask_pos.sum(dim=1) + 1e-12  # avoid div by zero
+        loss = - (numerator / denom).mean()
+        return loss
+
+
 class ResNetCifar(nn.Module):
     """
     ResNet with Push-Pull for CIFAR: implemented on top of the official PyTorch ResNet implementation
@@ -178,6 +213,8 @@ class ResNetCifar(nn.Module):
                  use_pp1=False, pp_all=False,
                  pp_block1=False, train_alpha=False, size_lpf=None, layer_expansions=[1,1,1]):
         self.inplanes = 16
+        self.get_projs = False
+        proj_dim=64
         super(ResNetCifar, self).__init__()
 
         if use_pp1:
@@ -205,7 +242,19 @@ class ResNetCifar(nn.Module):
             self.layer3 = self._make_layer(block, 64, layers[2], stride=2, size_lpf=size_lpf)
 
         self.avgpool = nn.AvgPool2d(8, stride=1)
-        self.fc = nn.Linear(64 * layer_expansions[-1], num_classes)
+
+        feat_dim = 64 * layer_expansions[-1]
+
+        self.fc = nn.Linear(feat_dim, num_classes)
+
+        
+        # projection head: two-layer MLP
+        self.proj = nn.Sequential(
+            # nn.Linear(feat_dim, feat_dim),
+            # nn.ReLU(inplace=True),
+            nn.Linear(feat_dim, proj_dim)
+        )
+
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -257,9 +306,16 @@ class ResNetCifar(nn.Module):
         x = self.layer3(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
 
-        return x
+        # Head 1 for Classification
+        logits = self.fc(x)       
+
+        # Head 2 for Supervised Contrastive Loss Calculation
+        if self.get_projs:
+            projections = self.proj(x)
+            return logits, projections
+
+        return logits
 
 
 def resnet20(layer_sizes, expansion, **kwargs):

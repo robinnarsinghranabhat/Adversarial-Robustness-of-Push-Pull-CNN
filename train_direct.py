@@ -39,6 +39,7 @@ else:
 import torch.utils.data as data
 from torchvision.datasets.utils import download_url, check_integrity
 
+from resnet.resnetcifar import SupConLoss
 
 def geometric_transforms(severity=1):
     # Severity controls the intensity of transformations
@@ -749,8 +750,9 @@ class ResNetCifar(nn.Module):
     def __init__(self, block, layers, num_classes=10,
                  use_pp1=False, pp_all=False,
                  pp_block1=False, train_alpha=False, size_lpf=None, layer_expansions=[1,1,1]):
-
         self.inplanes = 16
+        self.get_projs = False
+        proj_dim=64
         super(ResNetCifar, self).__init__()
 
         if use_pp1:
@@ -778,7 +780,18 @@ class ResNetCifar(nn.Module):
             self.layer3 = self._make_layer(block, 64, layers[2], stride=2, size_lpf=size_lpf)
 
         self.avgpool = nn.AvgPool2d(8, stride=1)
-        self.fc = nn.Linear(64 * layer_expansions[-1], num_classes)
+
+        feat_dim = 64 * layer_expansions[-1]
+
+        self.fc = nn.Linear(feat_dim, num_classes)
+       
+        # projection head: two-layer MLP
+        self.proj = nn.Sequential(
+            # nn.Linear(feat_dim, feat_dim),
+            # nn.ReLU(inplace=True),
+            nn.Linear(feat_dim, proj_dim)
+        )
+
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -830,9 +843,17 @@ class ResNetCifar(nn.Module):
         x = self.layer3(x)
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
-        x = self.fc(x)
 
-        return x
+        # Head 1 for Classification
+        logits = self.fc(x)       
+
+        # Head 2 for Supervised Contrastive Loss Calculation
+        if self.get_projs:
+            projections = self.proj(x)
+            return logits, projections
+
+        return logits
+
 
 
 def main():
@@ -944,6 +965,9 @@ def main():
 
     # define loss function (criterion) and optimizer
     criterion = nn.CrossEntropyLoss()
+    supcon_criterion = SupConLoss(temperature=0.07)
+    
+
     if use_cuda:
         criterion = criterion.cuda()
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
@@ -970,7 +994,7 @@ def main():
         print('lr(', epoch, '): ', scheduler.get_lr())
 
         # train for one epoch
-        train(logger, train_loader, model, criterion, optimizer, epoch, fileout)
+        train(logger, train_loader, model, criterion, optimizer, epoch, fileout, extra_loss=supcon_criterion)
 
         # evaluate on validation set
         prec1 = validate(logger, val_loader, model, criterion, epoch, fileout)
@@ -991,13 +1015,16 @@ def main():
     fileout.close()
 
 
-def train(logger, train_loader, model, criterion, optimizer, epoch, file=None):
+def train(logger, train_loader, model, criterion, optimizer, epoch, file=None, extra_loss=None):
     """Train for one epoch on the training set"""
+    lambda_contrast  = 0.5
+
     batch_time = AverageMeter()
     losses = AverageMeter()
     top1 = AverageMeter()
 
     # switch to train mode
+    model.get_projs = True
     model.train()
 
     end = time.time()
@@ -1010,8 +1037,13 @@ def train(logger, train_loader, model, criterion, optimizer, epoch, file=None):
         target_var = torch.autograd.Variable(target)
 
         # compute output
-        output = model(input_var)
-        loss = criterion(output, target_var)
+        
+        output, proj_feats = model(input_var)
+        loss_ce = criterion(output, target_var)
+
+        # SupCon loss on proj_feats
+        loss_con = extra_loss(proj_feats, target)
+        loss = loss_ce + lambda_contrast * loss_con
 
         # compute gradient and do SGD step
         optimizer.zero_grad()
@@ -1077,6 +1109,7 @@ def validate(logger, val_loader, model, criterion, epoch, file=None):
     top1 = AverageMeter()
 
     # switch to evaluate mode
+    model.get_projs = False
     model.eval()
 
     end = time.time()
