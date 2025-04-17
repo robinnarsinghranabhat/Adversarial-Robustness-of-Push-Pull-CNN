@@ -39,7 +39,7 @@ else:
 import torch.utils.data as data
 from torchvision.datasets.utils import download_url, check_integrity
 
-from resnet.resnetcifar import SupConLoss
+from resnet.resnetcifar import MultiPosConLoss as SupConLoss
 
 def geometric_transforms(severity=1):
     # Severity controls the intensity of transformations

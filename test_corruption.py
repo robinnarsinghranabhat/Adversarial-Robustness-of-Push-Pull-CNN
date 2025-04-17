@@ -118,6 +118,7 @@ def main():
 
         if args.layers == 20:
             model = resnet20(args.layer_sizes, args.expansion, **rnargs)
+            model.get_projs = False
         elif args.layers == 32:
             model = resnet32(**rnargs)
         elif args.layers == 44:

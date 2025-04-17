@@ -198,6 +198,45 @@ class SupConLoss(nn.Module):
         return loss
 
 
+class MultiPosConLoss(nn.Module):
+    """
+    Multi-Positive Contrastive Loss for single-GPU use.
+    """
+    def __init__(self, temperature=0.1):
+        super().__init__()
+        self.temperature = temperature
+
+    def forward(self, feats, labels):
+        # feats: tensor of shape [B, D]
+        # labels: tensor of shape [B]
+        import pdb; pdb.set_trace()
+        device = feats.device
+        B = feats.size(0)
+
+        # 1) Normalize feature vectors
+        feats = F.normalize(feats, dim=1)
+
+        # 2) Compute similarity matrix
+        sim = torch.matmul(feats, feats.T) / self.temperature
+        sim = sim - torch.max(sim, dim=1, keepdim=True)[0]  # stability
+
+        # 3) Create positive mask (exclude self)
+        labels = labels.view(-1, 1)
+        mask_pos = torch.eq(labels, labels.T).float().to(device)
+        mask_self = torch.eye(B, device=device)
+        mask_pos = mask_pos * (1 - mask_self)
+
+        # 4) Compute log-probabilities
+        exp_sim = torch.exp(sim) * (1 - mask_self)
+        log_prob = sim - torch.log(exp_sim.sum(dim=1, keepdim=True) + 1e-12)
+
+        # 5) Average over positive pairs
+        denom = mask_pos.sum(dim=1)
+        denom = torch.clamp(denom, min=1.0)
+        loss = - (mask_pos * log_prob).sum(dim=1) / denom
+
+        return loss.mean()
+    
 class ResNetCifar(nn.Module):
     """
     ResNet with Push-Pull for CIFAR: implemented on top of the official PyTorch ResNet implementation
