@@ -209,7 +209,6 @@ class MultiPosConLoss(nn.Module):
     def forward(self, feats, labels):
         # feats: tensor of shape [B, D]
         # labels: tensor of shape [B]
-        import pdb; pdb.set_trace()
         device = feats.device
         B = feats.size(0)
 
