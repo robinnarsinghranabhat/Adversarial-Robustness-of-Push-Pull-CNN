@@ -1,4 +1,5 @@
-# Push-Pull layer for enhanced robustness of ConvNets [[Paper]](https://link.springer.com/article/10.1007/s00521-020-04751-8)
+# Multi-Scale Push-Pull layer for enhanced robustness of ConvNets [[Paper]](https://www.researchgate.net/publication/394232512_Multi-Scale_Unrectified_Push-Pull_with_Channel_Attention_for_Enhanced_Corruption_Robustness)
+
 
 ## Creating Python environment if not present (Optional)
 ```bash
